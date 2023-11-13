@@ -1,0 +1,282 @@
+---
+title: Architecture definition for a button component
+---
+
+**Problem:** When building a React Button component, we often overcomplicate the implementation to the point of creating a "catch-all" component.
+
+**Question:** How can we refine this component to have the same reusability without the bloat?
+
+## The problem pattern
+
+A common pattern for a Button is to do the following.
+
+```javascript
+import React from "react"
+
+interface ButtonProps {
+	text: string
+	onClick?: (event: MouseEvent<HTMLButtonElement>) => void
+	icon?: React.ReactNode
+	iconPosition?: 'left' | 'right'
+	variant?: 'default' | 'primary' | 'secondary' | 'link' | 'ghost'
+	disabled?: boolean
+	// with an ever growing list of props to handle edge-cases
+}
+
+const Button = (props: ButtonProps) => {
+	// we
+	// then
+	// do
+	// a
+	// lot
+	// of
+	// gymnastics
+	// to
+	// get
+	// this
+	// to
+	// render
+	// properly
+}
+```
+
+With this approach it is not common to end up with a Button component that is 100+ lines of code. Additionally, you may have noticed a problem already. `MouseEvent<HTMLButtonElement>`, what if I wanted this button to be an anchor (`<a>`) instead? The `HTMLButtonElement` would not apply. Additionally, `onClick` might not apply at all, we might just want the styling and pass in a `href`.
+
+We can do some interface tricks for this to work.
+
+```javascript
+interface BaseButton {
+	text: string
+	type: 'link' | 'button'
+	icon?: React.ReactNode
+	iconPosition?: 'left' | 'right'
+	variant?: 'default' | 'primary' | 'secondary' | 'link' | 'ghost'
+	disabled?: boolean
+}
+
+interface LinkButton extends BaseButton {
+	type: 'link'
+	href: string
+	target: string
+	onClick?: (event: MouseEvent<HTMLAnchorElement>) => void
+}
+
+// shut up, I know ButtonButton is stupid
+interface ButtonButton extends BaseButton {
+	type: 'button'
+	onClick?: (event: MouseEvent<HTMLButtonElement>) => void
+	buttonType: 'button' | 'reset' | 'submit'
+}
+
+const Button = (props: LinkButton | ButtonButton) => {
+	const { type } = props
+
+	// base on `type` we can render a <a> or <button>
+}
+```
+
+With this example the amount of gynmastics drastically increases. Now lets introduce [Next.js](https://nextjs.org/) into the mix. It has its own `<Link>` component, however it is used to wrap an `<a>` tag. If we want to use the `passHref` prop, we'll probably have to tweak the interface, since now, `href` can be optional and it *might* have to work with `forwardRef`, which needs to work with both `<a>` and `<button>`.
+
+I think at this point we can agree this is probably not useful, and will cause a simple button, that is used throughout your project, to be insanely complex.
+
+## Breaking down the issue
+
+So, lets ask ourselves, why are we making this so complex? We know that many other libraries with `Button` components, allows you to switch the underlying DOM node. Many times they use the `as` keyword because of styled components. So should we just use that library or styled components?
+
+When I have seen this used, it has been in the context of keeping styling consistent and easily editable at a global level. Many times we have to alter the `className` of a button based on the props. So if one of the main reasons is styling, why don't we just abstract that out and have different components for a `<a>` and `<button>` styled buttons? Once we use a button in our application and decided on the element needed, what are the chances that it will need to change ever? Probably really low, like **really** low. So lets address the styling shall we.
+
+### Styling abstraction
+
+Let's start with our CSS, just going to keep this simple. We have a root class with different variations based on the props passed down.
+
+```css
+.button {}
+
+/* Variant specific classes */
+.button--default {}
+.button--primary {}
+.button--secondary {}
+.button--link {}
+.button--ghost {}
+
+/* State specific classes */
+.button--disabled {}
+.button--external {}
+
+/* Icon specific classes */
+.button--has-icon {}
+.button--has-icon--start {}
+.button--has-icon--end {}
+
+/* (Maybe) Element specific classes */
+.button--anchor {}
+.button--button {}
+```
+
+Cool, so that is a bit, but it isn't uncommon to see this amount of classes and style variations for a Block Component (or Atom, depending on your preference). Each one of these classes maps to different props and can help to define/refine your base props. So yes, that `BaseButton` interface is staying. **WOOOO**. But not in the same way.
+
+```javascript
+type ButtonVariant = 'default' | 'primary' | 'secondary' | 'link' | 'ghost'
+type ButtonIcon = React.ReactNode
+
+interface BaseButton {
+	startIcon?: ButtonIcon
+	endIcon?: ButtonIcon
+	variant?: ButtonVariant
+	disabled?: boolean
+}
+```
+
+Here is our base component interface, we have also created some additional types if we ever want to use these again, not 100% required but for now, it'll work.
+
+So how are we taking these props and transforming them into all the `className` of the button? Easy, write a hook.
+
+React Hooks don't have to wrap other hooks (`useState` for example), they can just be used to wrap functionality. We will also make use of a npm package called [`classnames`](https://www.npmjs.com/package/classnames), this allows us to easily create `className` strings. It isn't required, just makes life easier.
+
+```javascript
+import classnames from 'classnames'
+
+export const BASE = 'button'
+
+export const useButtonStyles = ({
+	startIcon,
+	endIcon,
+	variant = 'default',
+	disabled = false
+}: BaseButton): string => {
+	return classnames([
+		BASE,
+		`${BASE}--${variant}`,
+		{
+			[`${BASE}--disabled`]: disabled,
+			[`${BASE}--has-icon`]: startIcon || endIcon,
+			[`${BASE}--has-icon--start`]: startIcon,
+			[`${BASE}--has-icon--end`]: endIcon
+		}
+	])
+}
+```
+
+All this really does is take our base props and produce a list of classes based on the conditions we added.
+
+### Building the buttons
+
+Now that we have this hook that will create our base class names, how do we apply it to our different button types. Pretty easily, instead of creating 1 component to rule them all, we create multiple components based on the use case.
+
+Before we show that though, I want to briefly talk about extending HTML attributes as props. When using typescript, you can `extend` other interfaces which helps to create more generic interfaces and build up the complex interfaces. One really useful aspect here is the ability to extends HTML attributes based on the element.
+
+```javascript
+interface Button extends HTMLAttributes<HTMLButtonElement> {}
+```
+
+This will expose all the HTML attributes available to a `<button>` element without needing to define them yourselves. Depending on your project, you might not want/need this flexibilty. However, for the examples below, I will be using them.
+
+#### Button
+```javascript
+import classnames from 'classnames'
+import { useButtonStyles, BASE } from './useButtonStyles'
+
+interface ButtonProps extends BaseButton,
+	ButtonHTMLAttributes<HTMLButtonElement> {}
+
+const Button = ({
+	startIcon,
+	endIcon,
+	variant,
+	disabled,
+	children,
+	className = '',
+	...buttonAttributes
+}: ButtonProps) => {
+	const baseClassname = useButtonStyles({
+		startIcon,
+		endIcon,
+		variant,
+		disabled
+	})
+	const classname = classnames([baseClassname, className, `${BASE}--button`])
+
+	return (
+		<button className={classname} {...buttonAttributes}>
+			{startIcon}
+			{children}
+			{endIcon}
+		</button>
+	)
+}
+```
+
+#### Anchor
+
+```javascript
+import classnames from 'classnames'
+import { useButtonStyles, BASE } from './useButtonStyles'
+
+interface AnchorProps extends BaseButton,
+	AnchorHTMLAttributes<HTMLAnchorElement> {}
+
+const Anchor = ({
+	startIcon,
+	endIcon,
+	variant = 'link',
+	disabled,
+	children,
+	className = '',
+	target,
+	...anchorAttributes
+}: AnchorProps) => {
+	const baseClassname = useButtonStyles({
+		startIcon,
+		endIcon,
+		variant,
+		disabled
+	})
+	const classname = classnames([
+		baseClassname,
+		className,
+		`${BASE}--anchor`,
+		{
+			[`${BASE}--external`]: target && target === "_blank"
+		}
+	])
+
+	return (
+		<a className={classname} target={target} {...anchorAttributes}>
+			{startIcon}
+			{children}
+			{endIcon}
+		</a>
+	)
+}
+```
+
+When using these components, they now feel a lot of purposeful, meaninging the component does what you expect. A `Anchor` is a `<a>` and a `Button` is a `<button>`. Additionally, it will make other components in your application a lot more descriptive without needing inspect the props to determine what the component will render.
+
+Additionally, just in these two components there were a very small changes that would have been, not annoying, but would add additional conditional into your base component to achieve which HTML element is rendered, what additional classes should be added etc.
+
+You'll also notice that our interfaces are really simple, the `HTMLAttributes` interface really does the heavy lifting for us in this case, again, making these components feel more *native*, which is exactly what you want for a Block/Atom Component.
+
+### Usage
+
+<iframe
+	src="https://codesandbox.io/embed/nottub-6ihnc?fontsize=14&hidenavigation=1&theme=dark"
+    style={{width:'100%', height:'500px', border:0, borderRadius: '4px', overflow:'hidden'}}
+    title="nottub"
+    allow="accelerometer; ambient-light-sensor; camera; encrypted-media; geolocation; gyroscope; hid; microphone; midi; payment; usb; vr; xr-spatial-tracking"
+    sandbox="allow-forms allow-modals allow-popups allow-presentation allow-same-origin allow-scripts"
+></iframe>
+
+This sandbox shows the above code implemented to a relatively final state, the styling is a bit basic just to show off the different variants so that will need clean up and finalised. However, the React components have been written in the same way as above and everything seems to be working quite well.
+
+One of the changes I did was to wrap the `Anchor` in a `forwardRef`. This will allow us to use this custom component with the Next.js `Link` component.
+
+```javascript
+import Link from "next/link";
+import { Anchor } from "./Button";
+
+<Link href="/" passHref>
+	<Anchor>Next js Route</Anchor>
+</Link>
+```
+
+The great thing about this change is, it doesn't alter the implementation of the `Button` at all, and existing `Anchor` elements in the app will work perfectly fine as they did before. We were also able to type the ref object to be specifically a `HTMLAnchorElement` instead of a `HTMLAnchorElement|HTMLButtonElement`. Which again, adds in those conditional checks and also might behave weirdly with the `<Link>` component.

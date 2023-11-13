@@ -7,33 +7,28 @@
   },
   "favicon": "/favicon.svg",
   "colors": {
-    "primary": "#a855f7",
-    "light": "#9333ea",
-    "dark": "#a855f7",
+    "primary": "#f59e0b",
+    "light": "#d97706",
+    "dark": "#f59e0b",
     "anchors": {
-      "from": "#a855f7",
-      "to": "#9333ea"
+      "from": "#d97706",
+      "to": "#f59e0b"
     }
   },
   "tabs": [],
   "anchors": [],
   "navigation": [
     {
-      "group": "Get Started",
+      "group": "adro.codes",
       "pages": [
-        "quickstart",
-        "introduction",
-        "development"
+        "welcome"
       ]
     },
     {
-      "group": "Essentials",
+      "group": "The Vault",
       "pages": [
-        "essentials/markdown",
-        "essentials/code",
-        "essentials/images",
-        "essentials/settings",
-        "essentials/navigation"
+        "vault/button-component-architecture",
+        "vault/change-your-document-title-when-a-user-changes-tabs"
       ]
     }
   ],

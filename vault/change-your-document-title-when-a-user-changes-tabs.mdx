@@ -1,0 +1,119 @@
+---
+title: Change your document title when a user changes tabs
+---
+
+> This article was originally posted on [dev.to](https://dev.to/hurricaneinteractive/guilt-users-into-coming-back-with-your-document-title-55kn).
+
+**No intro just [get to the code](#code)**
+
+## Let's Get Started
+
+First things first, we are going to need a project base. For this, I am going to use [create-react-app](https://github.com/facebook/create-react-app). However, the code can be used in any JavaScript project. We'll just need access to the `document` object.
+
+> The code for this project is available on [Github](https://github.com/myweekinjs/please-dont-leave)
+
+### Step 1: Initialise
+
+```bash
+npx create-react-app please-dont-leave
+cd please-dont-leave
+npm start || yarn start
+```
+
+### Step 2: Find file
+
+Open your `App.js` file.
+
+### Step 3: Magic <a name="code"></a>
+
+Create a function above the `App` function called `getBrowserHiddenProps`. This function will get the correct properties for us to use based on the browser we are on.
+
+```javascript
+const getBrowserHiddenProps = () => {
+  let hidden, visibilityChange
+  if (typeof document.hidden !== "undefined") {
+    hidden = "hidden";
+    visibilityChange = "visibilitychange";
+  } else if (typeof document.msHidden !== "undefined") {
+    hidden = "msHidden";
+    visibilityChange = "msvisibilitychange";
+  } else if (typeof document.webkitHidden !== "undefined") {
+    hidden = "webkitHidden";
+    visibilityChange = "webkitvisibilitychange";
+  }
+
+  return {
+    hidden,
+    visibilityChange
+  }
+}
+
+```
+
+We are returning an object containing the `hidden` and `visibilityChange` values using a shorthand method. By not defining the keys of the object, the keys will default to the variable name. Below would achieve the same effect as above.
+
+```javascript
+return {
+  hidden: hidden,
+  visibilityChange: visibilityChange
+}
+
+```
+
+Pretty cool right? Anyway, **Onwards!**
+
+The next step is to add an event listener to the document to check if the page visibility has changed. We'll do this within the `App` function.
+
+```javascript
+const { hidden, visibilityChange } = getBrowserHiddenProps()
+
+if (typeof document.addEventListener !== "undefined" && typeof hidden !== "undefined") {
+  // We can continue
+}
+```
+
+Here we have another reason to return the `hidden` and `visibilityChange` as an object. This was so we can [deconstruct](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Destructuring_assignment#Object_destructuring) the return value of the `getBrowserHiddenProps` function. We're also checking to make sure that we are able to add an event listener to the document object and to ensure the `hidden` value is not `undefined`.
+
+Next, we need to add the event listener based on the visibility event (`visibilityChange`).
+
+```javascript
+const { hidden, visibilityChange } = getBrowserHiddenProps()
+
+if (typeof document.addEventListener !== "undefined" && typeof hidden !== "undefined") {
+  // We can continue
+  document.addEventListener(visibilityChange, () => {
+
+  }, false)
+}
+```
+
+Finally, we can check the `hidden` value and act of it. In our case, we'll be asking the user to come back because we miss their attention.
+
+```javascript
+const { hidden, visibilityChange } = getBrowserHiddenProps()
+
+if (typeof document.addEventListener !== "undefined" && typeof hidden !== "undefined") {
+  // We can continue
+  document.addEventListener(visibilityChange, () => {
+    if (document[hidden]) {
+      document.title = "😭 PLEASE COME BACK!!"
+    } else {
+      document.title = "😍 YAY!"
+    }
+  }, false)
+}
+```
+
+And there you have it! Watch your document title change as you change tabs. **Success**
+
+### Step 4: Possiblities
+
+Now, changing the tab title may not be that useful, however, there are a few things that you could do when a user moves to another tab. One of the most useful reasons to do this would be to send a Google Analytics Event. This will allow you to start seeing when users are leaving your page and if they return. Very cool.
+
+A lot of this code was leverage from the [Page Visibility API](https://developer.mozilla.org/en-US/docs/Web/API/Page_Visibility_API) page on MDN. I'd recommend checking out the page to learn more about this if you are interested.
+
+---
+
+Thank you for reading my article, it really means a lot! ❤️ Please provide any feedback or comments, I'm always looking to improve and having meaningful discussions.
+
+### 👋 until next time!
