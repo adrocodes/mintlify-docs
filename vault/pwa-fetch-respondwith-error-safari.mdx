@@ -1,0 +1,66 @@
+---
+title: PWA - FetchEvent.respondWith error on Safari
+---
+
+> This article was originally posted on [dev.to](https://dev.to/hurricaneinteractive/pwa-fetchevent-respondwith-error-on-safari-148f)
+
+Recently I have been working on a [PWA](https://web.dev/progressive-web-apps/) for a client. I chose to use [Gatsby](https://www.gatsbyjs.com/) to build out the front end and luckily it comes with some great plugins to help with building PWAs. Mainly the [offline](https://www.gatsbyjs.com/plugins/gatsby-plugin-offline/) and [manifest](https://www.gatsbyjs.com/plugins/gatsby-plugin-manifest/) plugins. After configuring those and building out the proof of concept, I deploy the site to Netlify and started testing on different devices.
+
+It all goes off without a hitch until I get to iPad Safari... Where after adding the app to the Home Screen and playing around with it, I turn off my wifi to test the offline mode. And I am met with this lovely error:
+
+```
+Error: "FetchEvent.respondWith received an error: TypeError: There seems to be no connection to the Internet."
+```
+
+You are correct error, there is no internet connection, that is the point.
+
+After spending a while Googling, as you do, I found two things.
+
+1. Apple doesn't like the term PWA, kinda irrelevant but worth noting.
+2. A **LOT** of other people were having the same issue.
+
+I tried several StackOverflow and Github solutions, with no luck. Eventually, I decided to go back to basics and create the most bare-bones PWA I could find. Which lead me to [this tutorial](https://medium.com/james-johnson/a-simple-progressive-web-app-tutorial-f9708e5f2605) on Medium by [James Johnson](https://medium.com/@james.johnson280). It was the `Hello World` of PWAs. Literally. Anyway, I followed the tutorial, deployed on Netlify and proceeded to test on iPad, with no issues! So something was wrong with the Gatsby build and not the iPad.
+
+I made two changes to my project, which were all pushed at the same time and ended up fixing my issue. In all honesty, I am not 100% sure which one was the actual fix and at this point, I am too scared to test.
+
+### 1. I added apple specific metadata
+
+These tags were mentioned in the tutorial I followed above. After looking at the built version of the site, I noticed these apple specific meta tags weren't being generated.
+
+*If you're not using Gatsby, I'd recommend adding these meta tags in the `<head>` of your pages, and seeing if it fixes your issue.*
+
+```javascript
+import { Helmet } from 'react-helmet'
+
+const PageWrapper = ({ ... }) => {
+  return (
+    <Helmet>
+      <meta name="apple-mobile-web-app-capable" content="yes" />
+      <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+      <meta name="apple-mobile-web-app-title" content="App Title" />
+    </Helmet>
+  )
+}
+```
+
+I used the [react-helmet](https://www.npmjs.com/package/react-helmet) package to add additional metadata to all my pages. The meta tag that seems the most important would be `apple-mobile-web-app-capable`.
+
+### 2. Updated the Workbox `globPatterns`
+
+In my `gatsby-config.js` file, I updated the manifest plugin options to include `cache_busting_mode: 'none'`, which is required when you specify a new `globPattern`. Then under the offline plugin I updated the workboxConfig to be:
+
+```js
+workboxConfig: {
+  globPatterns: ['**/*.{js,jpg,png,html,css}']
+}
+```
+
+I found this pattern while diving into the StackOverflow rabbit hole (I can't find the link again...).
+
+---
+
+That is it, after making those changes and pushing the code. The PWA started working on iPad devices. I'd say to test the first change before trying the second one (if you're using Gatsby), it seems to be the more relevant change.
+
+Hopefully, this has helped you in some way. I spent a few hours looking at this issue so I was pretty happy when it started working. Plus, why not share my solution so other people don't have to spend hours pulling their hair out.
+
+Peace! ✌️

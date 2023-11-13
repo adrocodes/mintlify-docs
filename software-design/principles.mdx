@@ -1,0 +1,131 @@
+---
+title: Software Design Principles
+---
+
+Below are some common design principles found all over the internet and books. They are important to follow if you want to create more flexible and scalable solutions. I do want to stress though, these principles do require some time investment to implement correctly. Rushing or shoving in all these principles may result in worse software. These are also not a 1 size fits all, meaning, you don't have to implement all of them because they may not apply to your project or you may have to twist them to be relevant to you. Frontend and Backend development is quite different, where dependency injection and abstract classes makes sense on the backend, they probably make no sense in a React component.
+
+Access your project, work with your team, educate team members on why investing in these principles are important, and then work hard and keep everyone accountable for sticking to these principles.
+
+## Break down the problem
+
+Rather than focusing on the entire feature as a whole, start by identifying all the smaller parts of the problem, if those are too big, break them down as well. You now have a collection of much smaller problems that can be worked on, tested and will eventually feed into the larger feature. This approach works well when working in larger teams, you are now able to create smaller tickets and get work done much faster. It also lends itself well to Test Driven Development, being able to write unit tests for each of these small pieces will be more efficient and effective than trying to writing monolithic tests for the entire feature.
+
+## Logic grouping
+
+Or more commonly known as "Cohesion".
+
+> the action or fact of forming a united whole
+
+The idea behind this principle is to group your logic and/or features into groups/packages/modules (whatever makes sense). This makes it much easier to find what you are looking for in the future. Rather than looking through all your directories, you can open one folder and have all the work presented to you. Most of my work is done in React, where I have taken up an approach called "[Module Driven Development](/software-design/module-driven-development)". Where each feature has its own "module", grouping all the hooks, utilities, styles, etc in that one folder.
+
+### Instead of this:
+
+```
+my-app/
+├─ components/
+│  ├─ component-1/
+│  ├─ component-2/
+├─ hooks/
+│  ├─ hook-one.ts
+│  ├─ hook-two.ts
+├─ utilities/
+│  ├─ util-one.ts
+```
+
+### It becomes
+
+```
+my-app/
+├─ modules/
+│  ├─ module-1/
+│  │  ├─ ui/
+│  │  ├─ service/
+│  │  ├─ common/
+│  ├─ module-2/
+│  │  ├─ ui/
+│  │  ├─ service/
+│  │  ├─ common/
+```
+
+## Reduce Dependencies and Coupling
+
+It is often quite easy to tightly tie components and logic to other parts of our application because it makes life easier, but it becomes quite problematic when one of those parts need to change drastically, or be removed completely. Often, this results in a lot of time and effort needed to refactor your work.
+
+Which is why we should strive to eliminate as many dependencies on other packages or pieces of functionality. It may require additional time up front but will help to debug issues later, introduce new functionality and help with testing. For example, using the [Adapter](https://refactoring.guru/design-patterns/adapter), [Bridge](https://refactoring.guru/design-patterns/bridge) or [Abstract Factory](https://refactoring.guru/design-patterns/abstract-factory) patterns can help immensely for creating logic where you can easily switch out the implementation as it is required.
+
+## Create abstractions
+
+One way to make code more reusable and flexible is to create abstractions. For example, lets say you were building an email service. Instead of implementing everything to only work with SendGrid, you would create a generic `Mailer` interface that any third-party service can implement and pass that to your email service. Abstracting the logic needed for your service out to this `Mailer` will give you a lot more flexibility in the future when requirements change or your client decides to change to a different provider.
+
+It would also help with mocking, while doing your testing, you can mock a dummy `Mailer` and use it while testing to "simulate" a real environment.
+
+```ts
+interface Mailer {
+  send(): Promise<void>
+}
+
+class SendGridMailer implements Mailer {}
+class MailgunMailer implements Mailer {}
+class MockMailer implements Mailer {}
+
+class MailService {
+  constructor(private mailer: Mailer) {}
+
+  execute() {
+    this.mailer.send()
+  }
+}
+
+new MailService(new SendGridMailer())
+new MailService(new MailgunMailer())
+new MailService(new MockMailer())
+```
+
+## Reusability()
+
+Working hand-in-hand with abstraction, the idea is to write your code in a more generic way to allow it to be used is many different areas, instead of just one feature. There is some time investment needed here to consider how something could be used in the future however, the investment will be worth it down the line.
+
+Something important to note here though, pick and choose your battles. If something is only ever used once, no need to make it reusable. This is similar to abusing the DRY principle, creating too many abstractions and making things too generic when it isn't needed will cause your software to crack.
+
+## Did somebody say yoga?
+
+Create software that is flexible, this requires a bit of forward thinking. This principle should be used with **Logic grouping**, developing reusable modules that are focused will automatically (most of the time) result in flexible code. Creating a module will also help to identify code that has already been developed, allowing it to be extracted into its own module, if required by other parts of the solution, reducing possible duplication. If you find that something isn't flexible enough, you can then spend a little bit of time refactoring that piece instead of redeveloping a solved problem.
+
+## Everything dies eventually
+
+Although dependencies are extremely common nowadays, we still need to be careful what we bring into your projects. Do a quick review of the dependency, is it being actively maintained, does it have a healthy number of monthly installs, etc. Packages can very quickly become outdated and will need to be replaced. Here is where abstractions and flexibility comes into play once again.
+
+For a long time a package called [moment](https://momentjs.com/) was very popular for working with dates. No shade to moment, it is quite an amazing package. However, since then many other modern alternatives have made their way onto the scene and people are trying to move away from moment. If we accounted for moment needing to be replaced, we would have created a module called `dates` and exported several utility functions to format, parse, calculate duration etc. Since they are all encapsulated in this module, we can easily install an alternative, replace moment in our `dates` module and as long as your tests pass we can move the ticket to review.
+
+However, if we imported moment throughout the entire codebase in 500 different files, repeated ourself constantely, we will need to find all those instances and replace them manually, making the entire process really annoying. Moving from working in 1 directory to working across every directory does not sound fun to me.
+
+## Portability
+
+Keep in mind the fact that in the future your application may not just be limited to the web, or it'll always be using React. Try to design for portability as much as possible, separate out business logic, or use something like [Style Dictionary](https://amzn.github.io/style-dictionary/) to allow your styles to be used across web, and mobile.
+
+This is very much a "just keep it in mind" type principle. Your project may always only be a website, so no need to worry in those cases.
+
+## 100% coverage
+
+_that is a bit of a joke, not always important or possible to have 100% coverage._
+
+Write code that is testable and write as many tests as possible. When writing software, in my experience at least, requirements are always changing and you and never fully predict the consequences of changing code, especially if you weren't the one that wrote the feature initially. **Breaking down the problem** and **Logic grouping** will be your best friends for this principle. Keeping your logic grouped and small will allow you to write a lot of tests that can almost fully test a larger feature without much additional work.
+
+Having tests is all well and good, as long as you use it. Make sure to add automated testing to your pipelines, pre-commit hooks etc. The quicker you can flag that something is wrong the quicker you can work to solve the issue.
+
+## Prepare the defenses
+
+Write code that covers as many edge cases as possible, throw meaningful error messages, protect against invalid input etc etc. Other people need to use your code, it is much better for you to provide them with as much information about what is wrong, instead of having them hit you up on slack or Github issues to ask why it doesn't work. Also, handle your `catch` block;
+
+```ts
+try {}
+catch (error) {
+  console.error(error)
+}
+```
+
+Don't do this, handle the error appropriately, inform the user why something went wrong. Even better, inform them something went wrong and provide more information on how they can possibly fix the issue.
+
+## Wrapping up
+
+Once again, I want to say, not all of these principles may apply to your project and it isn't something that you have to strictly follow. What is important is that you know what these principles are and work hard to try and implement them when it makes sense.

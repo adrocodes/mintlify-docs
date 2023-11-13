@@ -1,0 +1,110 @@
+---
+title: Response validation with Yup
+---
+
+**Problem:** Many times in our Frontend we just "accept" that an API response is what it should be. In Typescript we hide behind generics to type cast, but what if our API is a success with a data structure that we didn't expect? This happened a few times in a recent project. The backend logic for the API hit about 4 different services (that we had no control over), each of these are points of failure. Sometimes one would silently fail causing the API to be a `200` with invalid data. I had a great time.
+
+Here is what I am talking about:
+
+```javascript
+async function getMe() {
+  try {
+    const response = await fetch('http://get.profile')
+    const json: Profile = await response.json()
+    // Surely `json` will be the shape me need, nothing can go wrong
+    renderMe(json)
+  } catch (error) {
+    // Nothing will ever go wrong
+    console.error(error)
+  }
+}
+```
+
+Now, 99% of the time, this is fine, and 99% of the time, I do this as well... _Probably shouldn't, but here we are._ We kinda assume that if something goes wrong with the response then the `catch` will catch it. Otherwise, we're all good. This doesn't just happen with custom `fetch` calls. In React, if you use a fetch hook, many times it will allow you to pass in generics (`useFetch<Profile>()`) to say what the shape of the data will be. Again, this works, I do it, but there isn't a lot of safety from incorrect data.
+
+**Idea:** I have been thinking about is using a validation library, in this case [yup](https://github.com/jquense/yup) to add a extra layer of protection (this idea will work with any validation library). Usually, if we're working with forms we already have a validation library installed, so we aren't really introducing extra dependencies into our project. Additionally, if you're a Typescript user, these libraries can make type definitions a lot easier as well!
+
+Looking at our example above, we need to introduce 2 extra things. One is our schema and the other is validating our `json`.
+
+### Schema
+
+Continuing with the get profile idea, we'll create a `profile` schema. Depending on how you like to structure your projects. This could be in a `profile.schema.ts` or `profile.model.ts` file. Allowing you to separate things a little easier.
+
+```javascript
+import { object, string, date } from 'yup'
+
+export const profile = object({
+  email: string().email().required(),
+  name: string().required(),
+  birthday: date().required()
+})
+
+/**
+ * For Typescript users, you can import `InferType` from yup
+ * and export the Profile type
+ * export type Profile = InferType<typeof profile>
+ */
+```
+
+### Validate the data
+
+Now that we have our `profile` definition, we can validate our `json`, and handle any `ValidationError` that yup might throw.
+
+```javascript
+import { ValidationError } from 'yup'
+
+async function getMe() {
+  try {
+    const response = await fetch('http://get.profile')
+    const json = await response.json()
+    const data = await profile.validate(json, {
+      stripUnknown: true
+    })
+    renderMe(data)
+  } catch (error) {
+    if (error instanceof ValidationError) {
+      alert("The response data is invalid")
+      return
+    }
+
+    alert("Uncaught error occured")
+  }
+}
+```
+
+You will notice a few things are different here.
+
+1. We have removed our generics. If the `validate` call is successful, then we can be confident that `data` is in our `Profile` shape.
+2. In the `catch` block, we can now test for this `ValidationError` and provide the user some extra details about the issue, instead of a generic 'Something went wrong' message.
+3. (Optional) I also passed in `stripUnknown: true` to the `validate` options. As the name suggests, it will remove any data that isn't in our `profile` schema. This makes the data more consistent but also 'forces' someone to update the schema if additional data is added.
+
+### Using a hook library
+
+In the case that you are using a fetch hook of some description. Some of them may have a `validation` option where you can do the same thing. Alternatively, I've seen that many allow for a `transform` step. Giving you a chance to change the data before returning it to the user.
+
+```javascript
+const { data, loading, error } = useFetch('http://get.profile', {
+  transform: async (json) => {
+    const data = await profile.validate(json)
+    return data
+  }
+})
+```
+
+### That's all folks
+
+Aaaand... that is it. Nothing else to really add. If you take anything away from this it would be, don't fully trust that your data is as expected. Adding additional checks in your components or logic won't hurt anyone. Validation libraries are usually very performant and already installed in many projects, utilising them to standardise schema definitions, type definitions and API data may provide some additional benefits to your projects. It could also help with mocking data, I am sure there are libraries out there that can take one of these schemas and output some JSON that matches the structure.
+
+Below is a Codesandbox with this idea implemented, feel free to play around a bit. I did set the console to be open, but it sometimes vanishes so it might be best to open it in a different tab. Play around with the `me` function and return some weird data to see if the validation works.
+
+Peace! ✌️
+
+> _Bit of a disclaimer:_ the ideas in this article are just ideas. I haven't been able to test them out fully yet. Complex data structures or conditional responses might require a more complex schema. I have noticed with complex schemas that the `InferType` becomes a "everything is optional" type, which isn't always ideal.
+
+<br />
+<iframe src="https://codesandbox.io/embed/yup-response-validation-6jtohl?expanddevtools=1&fontsize=14&theme=dark"
+  style={{ width:"100%", height:"750px", border:0, borderRadius: "4px", overflow:"hidden" }}
+  title="yup-response-validation"
+  allow="accelerometer; ambient-light-sensor; camera; encrypted-media; geolocation; gyroscope; hid; microphone; midi; payment; usb; vr; xr-spatial-tracking"
+  sandbox="allow-forms allow-modals allow-popups allow-presentation allow-same-origin allow-scripts"
+></iframe>

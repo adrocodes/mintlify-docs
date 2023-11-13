@@ -1,0 +1,72 @@
+---
+title: Module Driven Development
+---
+
+_This will be slightly Frontend heavy, but the same idea can be applied anywhere really._
+
+The idea of module driven development (MDD) is moving from;
+
+**this**
+
+```
+my-app/
+├─ components/
+│  ├─ component-1/
+│  ├─ component-2/
+├─ hooks/
+│  ├─ hook-one.ts
+│  ├─ hook-two.ts
+├─ utilities/
+│  ├─ util-one.ts
+```
+
+**to this**
+
+```
+my-app/
+├─ modules/
+│  ├─ module-1/
+│  │  ├─ ui/
+│  │  ├─ service/
+│  │  ├─ common/
+│  ├─ module-2/
+│  │  ├─ ui/
+│  │  ├─ service/
+│  │  ├─ common/
+```
+
+So, what is the big difference? Instead of separating your logic across a bunch of folders, you encapsulate your features into their own folder. If you get a ticket for feature `x`, you can go directly to `modules/x` and get started straightaway. The idea is to separate things logically and make it easy to find the work in the future. This also means that it becomes a lot easier to move one of these modules to different projects if required, since most of the logic is within that module, instead of spread across your project.
+
+The problem now becomes, what if two or more modules need a common piece of functionality? You create a new module. With MDD, you won't elimiate your `hooks` and `utility` folders. In majority of your projects, you will most likely have a `hooks` module. The difference is, instead of having ALL of your hooks in there, you will probably only have common hooks like `useMount`, `useScrollTo`, `useFetch` etc. Whereas, your `useAuthentication` hook will be within your `authentication` module, keeping the logic closer to the domain that it is related to.
+
+I hope that gives a decent enough overview of what MDD is and what it hopes to accomplish, lets now dive into a few other topics.
+
+## Think narrow and broaden your horizon as needed
+
+What I mean by this is, if you are working on a module, keep the functionality within that module. At this stage, there isn't a need to create another module for some piece of functionality that _may_ be reused in the future. For example, a hook like `useScrollTo` sounds very generic and sounds like you should create a `hooks` module to put it in. However, what if the module you are working on is the sidebar, where if you click on a nav item it will attempt to scroll to a heading. This could be the only place this `useScrollTo` is used. So keeping it contained in your sidebar module will mean you can quite easily move this sidebar to another project, without having to worry about pulling over the `hooks` module as well.
+
+This leads me to my next point.
+
+## Continuous refactoring
+
+When it does come to the point where you need the `useScrollTo` hook in other modules, this is the time that you refactor slightly and create the `hooks` module. At this point, it makes sense to create this separation because it is needed.
+
+I am a big advocate for "leave it cleaner than when you found it", this means, as you're working on a codebase and a feature, if it makes sense to do a bit of cleaning up or refactoring, go ahead and do it, but keep it contained. You'll probably waste a lot of time trying to refactor everything at once, so instead, refactor as needed and leave the codebase cleaner than when you found it. If you continue to do these smaller refactors/cleaning, your team will love you.
+
+## Importance of consistent structure
+
+Within your modules it is definitely recommended to have a consistent structure. This can be based on your team preference, but once you decide on a structure, keep with it. I usually stick these folders;
+
+1. `ui` - a collection of React components
+1. `service` - a collection of hooks used throughout the components
+1. `context` - any context required for the module
+1. `common` - common type definitions and utilities used in the module
+1. `styles` - any styling required for the components
+
+## Modules can have modules
+
+When it makes sense, a module could have other modules nested within it. If it relates to an existing feature/domain you shouldn't feel pressured to create a new module. An example, let us look at a module for `authentication`. Within this module you could have modules for, `login`, `sign-up`, `withAuthentication`, etc. These are all related to `authentication` and grouping them under this parent module makes sense.
+
+## Wrapping up
+
+And that is the idea behind MDD. Separate your features into modules to allow them to be easily found and changed. Continuously refactoring is key to making sure modules are indepentant and as focused as possible.

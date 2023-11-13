@@ -1,0 +1,68 @@
+---
+title: Show custom editor warnings on Nodes
+---
+
+> This article was originally posted on [dev.to](https://dev.to/hurricaneinteractive/godot-show-editor-warnings-on-nodes-2p8p)
+
+Have you ever wanted to add the warning triangle on custom nodes that you can see on an `Area2D` or `KinematicBody2D` node? Well, then you're in luck because it is actually pretty easy!
+
+For this example, we're going to create a custom `Enemy` node that requires a `Sprite` child node. That will give you a good starting point to extend the functionality to fit your purpose.
+
+First, create a new script that inherits from the `Node2D` (or whatever node you'd like your `Enemy` to inherit from). I am going to call my file `Enemy.gd`.
+
+We will define our class name to be `Enemy` and add the [`tool`](https://docs.godotengine.org/en/stable/tutorials/misc/running_code_in_the_editor.html) keyword. This will allow us to run code in the editor and show the required errors. One note here, I recommend reading the documentation for the `tool` keyword as there are some caveats that you will need to know about.
+
+The top of your script should look something like this:
+
+```gd
+extends Node2D
+tool
+class_name Enemy
+```
+
+Next, we'll add the magical function, `_get_configuration_warning`. Whenever this function returns a non-empty string, it will show the warning in the editor.
+
+```gd
+// ...
+
+func _get_configuration_warning():
+	return ""
+```
+
+Before we add the logic, create your new `Enemy` node in a `Scene` so you can see the warnings appear in the editor. If you've changed the return statement, you should see something similar to this:
+
+<Image src={godotWarning} alt="Editor warning example in godot" />
+
+We'll only be looking at direct children, so we'll use the `get_children` method and do a simple boolean check if the check includes a `Sprite`.
+
+```gd
+func _get_configuration_warning():
+	var has_sprite = false
+
+	for child in get_children():
+		if child is Sprite:
+			has_sprite = true
+
+	if !has_sprite:
+		return "Sprite is required"
+
+	return ""
+```
+
+We create a boolean variable called `has_sprite` and set it to `false` by default. Then we loop through all the children, check if the child `is` a `Sprite` and set the variable to `true`. After the loop, we check if the `has_sprite` variable is still `false` and if it is, then we return a message saying that a `Sprite` is required.
+
+If you save the script, the warning should pop up with your message and adding a `Sprite` as a child node should remove the warning.
+
+The cool thing here is the `is` keyword, which allows us to;
+
+> Tests whether a variable extends a given class, or is of a given built-in type.
+
+Using this, we can test for any other nodes or other custom nodes that we have created.
+
+Again, this is a very simple example but will be a good starting point from which to extend further to suit your needs.
+
+---
+
+Thank you for reading my article, it really means a lot! ❤️ Please provide any feedback or comments, I'm always looking to improve and have meaningful discussions.
+
+👋 until next time!

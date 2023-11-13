@@ -28,7 +28,41 @@
       "group": "The Vault",
       "pages": [
         "vault/button-component-architecture",
-        "vault/change-your-document-title-when-a-user-changes-tabs"
+        "vault/change-your-document-title-when-a-user-changes-tabs",
+        "vault/create-a-chrome-extension-with-react",
+        "vault/dynamic-nextjs-preview-mode",
+        "vault/eleven-unit-test-rules",
+        "vault/gamification",
+        "vault/pub-sub-micro-frontends",
+        "vault/pwa-fetch-respondwith-error-safari",
+        "vault/react-micro-contexts",
+        "vault/recursion-with-react",
+        "vault/response-validation-with-yup"
+      ]
+    },
+    {
+      "group": "How To",
+      "pages": [
+        "how-to/import-json-into-typescript-file",
+        "how-to/merge-search-url-params"
+      ]
+    },
+    {
+      "group": "Software Design",
+      "pages": [
+        "software-design/module-driven-development",
+        "software-design/principles"
+      ]
+    },
+    {
+      "group": "Game Development",
+      "pages": [
+        {
+          "group": "Godot",
+          "pages": [
+            "game-development/godot/godot-show-custom-editor-warnings"
+          ]
+        }
       ]
     }
   ],

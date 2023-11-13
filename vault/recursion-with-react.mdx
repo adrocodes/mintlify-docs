@@ -1,0 +1,246 @@
+---
+title: Applying Recursion when rendering in React
+---
+
+**Problem:** there are times when writing a React component that we need to render nested children based on a data source that has been provided to us.
+
+**Question:** can we apply recursion to make this nested rendering easier, without creating a lot of complexity.
+
+## Inspecting the data
+
+```json
+{
+	"list": [
+		{
+			"id": 1,
+			"title": "Hello world",
+		},
+		{
+			"id": 2,
+			"title": "Hello world",
+			"children": [
+				{ "id": 2.1, "title": "Hello smaller world" },
+				{ "id": 2.2, "title": "Hello smaller world" },
+			]
+		}
+	]
+}
+```
+
+Lets pretend we have this data structure and we want to produce a dynamic `<ul>` list based on this data structure.
+
+## List rendering
+
+Looking at the data we might do something like this.
+
+```javascript
+const List = ({ items }) => {
+	const renderChildren = (children) => {
+		return (
+			<ul>
+				{children.map((item) => (
+					<li key={item.id}>
+						{item.title}
+					</li>
+				))}
+			</ul>
+		)
+	}
+
+	return (
+		<ul>
+			{items.map((item) => (
+				<li key={item.id}>
+					{item.title}
+					{item.children && renderChildren(item.children)}
+				</li>
+			))}
+		</ul>
+	)
+}
+```
+
+And this works, but now we get some data that have another level of nested children. Do we create another function to render these children? Well we already have a `renderChildren` method, so lets just use that instead.
+
+```javascript
+const List = ({ items }) => {
+	const renderChildren = (children) => {
+		return (
+			<ul>
+				{children.map((item) => (
+					<li key={item.id}>
+						{item.title}
+						{item.children && renderChildren(item.children)}
+					</li>
+				))}
+			</ul>
+		)
+	}
+
+	return (
+		<ul>
+			{items.map((item) => (
+				<li key={item.id}>
+					{item.title}
+					{item.children && renderChildren(item.children)}
+				</li>
+			))}
+		</ul>
+	)
+}
+```
+
+Boom! And we have recursion. But you might notice that the component return and the `renderChildren` return is pretty much the same. That is because they are! And we already had a `renderChildren` method, it was just called `List`. So why not use it, now we can refine this component even further.
+
+```javascript
+const List = ({ items }) => (
+	<ul>
+		{items.map((item) => (
+			<li key={item.id}>
+				{item.title}
+				{item.children && <List items={item.children} />}
+			</li>
+		))}
+	</ul>
+)
+```
+
+Remember, React components are just functions and as the defintion of recursion says;
+
+> Recursion is where a function being defined is applied within its own logic.
+
+We are utilising the `List` function in the same function that we are using it. This will allow you to infinitely nest children in this list and it will just keep nesting the different lists.
+
+This example does assume that the nested list items follow the same data structure as the root list. This will obviously change depending on the requirements of the project but the benefit of using your React components as the recursive function is pretty powerful.
+
+## Want something a bit more "advanced"
+
+Here is a bit more of a real-world example. We have some data to render different learning areas that you will find at a school, Math, English etc.
+
+This list has a similar structure to the list above but we have another requirement. We have a top level search input to filter the areas. While rendering, if any item contains a match with this filter it should show. For parent items, if any child items are visible, we should show the parent. Check out a [working example](https://9qxck.csb.app/).
+
+Lets define the rendering of a single Learning area. The data structure looks like this;
+
+```typescript
+export type LearningAreaProps = {
+	label: string;
+	children?: { [subject: string]: CheckboxListItem };
+};
+```
+
+We will ignore children for now and just get this to render what we are after. We will also add a `level` prop to component to help us indent the component.
+
+```javascript
+const LearningArea = ({
+	label,
+	children,
+	level = 0
+}: LearningAreaProps & { level?: number }) => {
+	return (
+		<div style={{ paddingLeft: (24 * level) }}>
+			<p>{props.label}</p>
+		</div>
+	)
+}
+```
+
+Pretty simple so how do we handle the children? Well first, in the data structure, you'll notice that these are a object instead of an array. Doesn't matter, should still be fine.
+
+```javascript
+const LearningArea = ({
+	label,
+	children,
+	level = 0
+}: LearningAreaProps & { level?: number }) => {
+	return (
+		<div style={{ paddingLeft: (24 * level) }}>
+			<p>{props.label}</p>
+			{children && Object.keys(children).map((key) => (
+				<LearningArea {...children[key]} level={level + 1} />
+			))}
+		</div>
+	)
+}
+```
+
+Great so now we will need the filter, for the sake of explaining, we will continuely pass down the `filter` value. We could set up the `filter` to have been created and stored within [Context](https://reactjs.org/docs/context.html).
+
+```javascript
+const Listing = ({ data }) => {
+	const [filter, setFilter] = useState("")
+
+	return (
+		<>
+			<input type="text" value={filter} onChange={setFilter} />
+			{data.map((item) => <LearningArea {...data} filter={filter} />)}
+		</>
+	)
+}
+```
+
+Great, so our `Listing` component takes in our data and starts the recursive looping of our learning areas. But now, we have to work on that filtering requirement. Luckily, we will just need to stay within the `LearningArea` component.
+
+```javascript
+const checkNestedChildrenMatch = (
+	list: { [subject: string]: CheckboxListItem },
+	matchRegExp: RegExp
+) => {
+	return Object.keys(list).some((key) => {
+		const item = list[key]
+		return (
+			matchRegExp.test(item.label) ||
+			(item.children
+				? checkNestedChildrenMatch(item.children, matchRegExp)
+				: false)
+		)
+	})
+}
+
+const LearningArea = ({
+	label,
+	children,
+	level = 0,
+	filter
+}: LearningAreaProps & { level?: number; filter: string }) => {
+	const matchRegExp = new RegExp(filter, "gi");
+
+	const selfMatches = matchRegExp.test(label)
+	const childrenMatches = children
+		? checkNestedChildrenMatch(children, matchRegExp)
+		: false
+	const shouldShow = selfMatches || childrenMatches
+
+	return (
+		<div
+			style={{
+				paddingLeft: (24 * level),
+				display: shouldShow ? 'block' : 'none'
+			}}
+		>
+			<p>{label}</p>
+			{children && Object.keys(children).map((key) => (
+				<LearningArea
+					key={key}
+					{...children[key]}
+					level={level + 1}
+					filter={filter}
+				/>
+			))}
+		</div>
+	)
+}
+```
+
+And that really should be it. In the sandbox below, switch between `<App />` and `<DiffApp />` in the `index.tsx` to see the difference between the two.
+
+We also added in another method called `checkNestedChildrenMatch` which once again uses recursion to check deeply nested children and ensure that all parents are visible as needed.
+
+Now, this component can be cleaned up. For example, the indented padding can be replaced with styling, as well as the `display` styling. Other than that, I would say that was a success, and personally, might be a bit easier to read to the code in `App.tsx`.
+
+<iframe
+	src="https://codesandbox.io/embed/recursion-with-reduce-9qxck?fontsize=14&hidenavigation=1&theme=dark"
+		style={{ width:"100%", height:"750px", border:0, borderRadius: "4px", overflow:"hidden" }}
+		title="recursion-with-reduce"
+		allow="accelerometer; ambient-light-sensor; camera; encrypted-media; geolocation; gyroscope; hid; microphone; midi; payment; usb; vr; xr-spatial-tracking"
+		sandbox="allow-forms allow-modals allow-popups allow-presentation allow-same-origin allow-scripts"
+></iframe>

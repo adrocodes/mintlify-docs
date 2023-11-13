@@ -1,0 +1,113 @@
+---
+title: React - Micro Contexts
+---
+
+A while ago now, React released [Context](https://reactjs.org/docs/context.html) to the masses and the world has never been the same. It seems to have gone downhill, but not because of context. Anyway...
+
+> Context provides a way to share values like these between components without having to explicitly pass a prop through every level of the tree.
+
+This is pretty awesome, because we now have a native way to manage our global state, page-level state, etc, which is what I use it for quite a bit. But recently I had a project where I created some local context that I just called a Micro Context. Sounds fancy but it is pretty simple. Pretty much, this context accepted the data structure for a particular domain object, then exposed that data to all the children, the best part, I could then create a BUNCH of utility hooks to access this context data and do something with it. It made working with the data much easier, made my components really clean and allowed me to reuse the context & hooks to various parts of the application, a win-win really. Another benefit was, the context was now **really** close to where it was being used, which is ideal.
+
+Obviously, you want to see an example. Lets do it, I am going to use a e-commerce site as an example, specifically for a grocery store in my case, I live in Australia, so I have to use [Woolworths](https://www.woolworths.com.au/shop/browse/pantry/tea-coffee). (And yes, opening to the coffee and tea page was intentional)
+
+<Image src={wooliesListing} alt="Screenshot of the Woolworths product listing with annotations" />
+
+I have outlined a few of the cards to break down a couple of the elements. We can see they all share the same common elements, with probably just a few data differences that indicate what should show or what styling to apply. We could say the data structure looks something like this (probably a lot more complex, but this'll do for now):
+
+```typescript
+interface Product {
+  id: string
+  asset: string
+  // Arkadia Chai Tea Low Sugar
+  title: string
+  // 240g
+  quantity: string
+  // 7.00
+  price: number
+  // 2.92
+  pricePerQuantity: number
+  // 100G
+  measurementQuantity: string
+  // false
+  isOnSale: boolean
+  // 0
+  onSalePrice: number
+  // false
+  sponsored: boolean
+  // false
+  isLowPrice: boolean
+}
+```
+
+Now that we have that, we can create our `Product` micro context.
+
+```tsx
+import { useState, useContext, createContext, PropsWithChildren } from "react"
+
+const ProductContext = createContext<Product|undefined>(undefined)
+
+const ProductProvider = (props: PropsWithChildren<{ product: Product }>) => {
+  const [product] = useState(() => props.product)
+
+  return (
+    <ProductContext.Provider value={product}>{children}</ProductContext.Provider>
+  )
+}
+
+const useProduct = () => {
+  const context = useContext(ProductContext)
+
+  if (!context) throw new Error('Please use within a ProductProvider')
+
+  return context
+}
+```
+
+This is a pretty simple context setup, all it does is allow the provider to accept a product and exposes a hook to pull out the data. There is no way to update the product, because you shouldn't be allowed to really.
+
+Now that we have that, we can set up the card. Which, I will be building out any of the components, but check this out.
+
+```tsx
+const ProductCard = () => (
+  <ProductCardWrapper>
+    <SavingsBar />
+    <LowPriceBar />
+    <ProductAsset />
+    <SponsoredIndicator />
+    <ProductTitle />
+    <ProductPrice />
+    <AddToCart />
+    <SaveToList />
+  </ProductCardWrapper>
+)
+```
+
+That is our card, where is our data? Remember, this will be wrapped with our `ProductProvider`, so each one of those components can access the data that it needs and decide if it should render or not. We don't have to do anything special in this card, simply just construct the layout. What makes this really nice, we can pretty freely remove or add sections of the card. Allowing us to use the same provider, same components to construct a smaller card, landscape card etc.
+
+To render these we'd just do;
+
+```jsx
+productsToRender.map((product) => (
+  <ProductProvider key={product.id} product={product}>
+    <ProductCard />
+  </ProductProvider>
+))
+```
+
+We can now create a few useful hooks to help with rendering our data.
+
+1. `useProductTitle` - combines the `title` + `quantity` into one string
+2. `useProductDiscountAmount` - checks if the product is on sale then returns the difference between `price` and `onSalePrice`.
+3. etc. these can be really small but becomes really useful when using across the application.
+
+Where can you use this context, components and hooks again?
+
+1. Cart listing
+2. Custom lists
+3. Really anywhere that product data can be displayed. Remember, you are not creating a context specifically for the card, you are creating the context for the domain object (`Product`), meaning wherever a product is rendering data, you can wrap it in the context and use a large collection of hooks to make the data manipulation constant and easy.
+
+## Conclusion
+
+I hope that this look at using context to be more localised to a domain object has been interesting, and gives you an idea of how you can use it in your projects. If you have a look at my article on [Module Driven Development](/software-design/module-driven-development), you'll see how this approach fits in really well with that. It also benefits testing, creating these small hooks allows you to test each individual piece on its own and gives you more confidence when something needs to change.
+
+### 👋 until next time!

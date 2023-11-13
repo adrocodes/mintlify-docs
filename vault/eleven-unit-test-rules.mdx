@@ -1,0 +1,21 @@
+---
+title: 11 Unit test rules
+---
+
+1. Write the tests first.
+2. Test a independant function or unit of code at a time. Don't test and entire class (or similar) in 1 go.
+3. Only have 1 assertion per test.
+4. Tests should be independant without needing other tests to run first.
+5. Create utilities to help with effective testing, setups etc
+6. Make use of setups/teardowns (`beforeEach`, `afterEach`, etc) to set up tests and their data.
+7. Use a determined input with a **known** output. Avoid testing cases where the input or output is fuzzy.
+8. Avoid these;
+	1. Random data
+	2. Network requests
+	3. File system access
+	4. Reliance on real-world values, gravity constant, time and date, timezones etc. Set explict values for these instead of `Date.now()` for example. `assert(Date.now()).Equals('2022-01-01')` will only succeed once.
+9. Mock network requests and other data that could be dependant on outside factors.
+10. When debugging, write a failing test for the bug. If the passes, it means the bug is something else, or not understood.
+11. When refactoring, ensure that the tests fail when the method is removed, check coverage for the method. If it isn't covered, write tests for the current method before refactoring. Otherwise, your refactor will not be safe.
+
+### 👋 until next time!

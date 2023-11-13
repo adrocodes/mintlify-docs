@@ -1,0 +1,153 @@
+---
+title: Dynamic Nextjs preview mode
+---
+
+If you ever worked on a Next.js project and needed a preview mode you know that is both super simple but tedious if you have different content types, route structures etc. Especially if you want to [follow the advice given by Next](https://nextjs.org/docs/advanced-features/preview-mode#securely-accessing-it-from-your-headless-cms) and verify that the record exists before you enable preview mode. That becomes kinda hard if you have a catch all, or you end up with a lovely look up table. While that works, I like approaches that are flexible but a bit more explict.
+
+The following code can all go in 1 file. Depending on how you structure pages, it may go in a lib or something similar, I am a fan of [Module Driven Development](/software-design/module-driven-development), so I will create a `next` module with a `preview.ts` file in my `common` directory.
+
+## Useful utilities
+
+These will be used for both enabling & disabling preview mode.
+
+```ts
+const unifySlug = (slug: string | string[]): string => Array.isArray(slug) ? slug.join('/') : slug
+const defaultRedirectSlugFormatter = (slug: string) => `/${slug}`
+```
+
+## Disable preview
+
+```ts
+// ... Useful utilities
+
+export const disablePreview = () => {
+  return (req: NextApiRequest, res: NextApiResponse) => {
+    // Clears the preview mode cookies.
+    // This function accepts no arguments.
+    res.clearPreviewData()
+
+    const slug = req.query["slug"]
+
+    if (slug) {
+      // Redirect to the path from the fetched post
+      res.redirect(unifySlug(slug))
+    } else {
+      res.end('Preview mode disabled');
+    }
+  }
+}
+```
+
+This is pretty simple, if you hit your disable endpoint, it'll create the preview data and redirect you to any `?slug=xx`, otherwise just print that the preview mode has been disabled. You can customise that default case, going to the homepage is probably a good idea.
+
+## Enabling preview
+
+This is where the magic happens. First define some types (if you're not using TypeScript, you can leave these out, but they really help!)
+
+```ts
+export type PreviewSlugQuerySignature<R = { slug: string }> = (slug: string) => Promise<R>
+type FormatRedirectSlug = (slug: string) => string
+
+// ... Useful utilities
+// ... Disable preview
+```
+
+The first type is a function signature that takes in the slug of the page and returns a promise that contains the slug. This will be your chance to make a request to your CMS to ensure this slug exists and you can find the record we are requesting.
+
+Next we'll define the enable preview method, this will go below the Disable Preview section.
+
+```ts
+// ... Types
+// ... Useful utilities
+// ... Disable preview
+
+export const enablePreview = (
+  getPreviewSlug: PreviewSlugQuerySignature,
+  redirectSlugFormatter: FormatRedirectSlug = defaultRedirectSlugFormatter
+) => {
+  return async (req: NextApiRequest, res: NextApiResponse) => {
+    const secret = req.query["secret"]
+    const slug = req.query["slug"]
+    const previewSecret = secret !== process.env["DATO_PREVIEW_SECRET"]
+
+    if (previewSecret || !slug) {
+      return res.status(401).json({ message: 'Invalid token' })
+    }
+
+    try {
+      const payload = await getPreviewSlug(unifySlug(slug))
+
+      if (!payload) {
+        return res.status(401).json({ message: 'Invalid slug' })
+      }
+
+      // Enable Preview Mode by setting the cookies
+      res.setPreviewData({})
+
+      // Redirect to the path from the fetched post
+      // We don't redirect to req.query.slug as that might lead to open redirect vulnerabilities
+      res.writeHead(307, { Location: redirectSlugFormatter(payload.slug) })
+      res.end()
+      return
+    } catch {
+      return res.status(401).json({ message: 'Invalid slug' })
+    }
+  }
+}
+```
+
+`enablePreview` is a function that returns a function. We pass in the method to confirm the slugs exist and a `redirectSlugFormatter`, this will be your chance to format the slug. For example, if someone wants `/article/one`. Your CMS may only return the slug of `one`, you can then pass in a method that appends the `/article` to the slug before the user is redirected.
+
+The endpoint will need to be passed 2 query strings.
+
+1. `secret` - to confirm only people you want are requesting the preview. This is stored in the `DATO_PREVIEW_SECRET` environment variable.
+2. `slug` - the page slug that you want to preview
+
+We then try to get the data from the CMS, if it is found, we set the preview data (enabling preview mode) and redirect the user to the given page, using the formatter to take us where we need to go. If we fail that any point, we return a 401 error.
+
+## Usage
+
+Now that you have this, how do you use it? You'll need to create at least 2 files.
+
+1. `pages/api/disable-preview.ts` - disables the preview
+2. `pages/api/preview.ts` - enables the preview
+
+### `pages/api/disable-preview.ts`
+
+```ts
+import { disablePreview } from '@module/next'
+
+export default disablePreview()
+```
+
+### `pages/api/preview.ts`
+
+```ts
+import { enablePreview } from '@module/next'
+
+// fake stub
+const getPreviewSlug = (slug: string) => {
+  return await cms.query(pageQuery, { slug }).data
+}
+
+export default enablePreview(getPreviewSlug, (slug) => `/${slug}`)
+```
+
+If you needed a specific preview route for articles, you can do;
+
+### `pages/api/preview/article.ts`
+
+```ts
+import { enablePreview } from '@module/next'
+
+// fake stub
+const getPreviewSlug = (slug: string) => {
+  return await cms.query(articleQuery, { slug }).data
+}
+
+export default enablePreview(getPreviewSlug, (slug) => `/articles/${slug}`)
+```
+
+---
+
+I hope this allows you to easily create your preview routes. Check out the [Nextjs Documentation](https://nextjs.org/docs/advanced-features/preview-mode) for more details around the subject, for example, checking the preview state in `getStaticProps` etc.

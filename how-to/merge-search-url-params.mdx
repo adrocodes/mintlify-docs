@@ -1,0 +1,13 @@
+---
+title: How to - Merge to SearchURLParams objects
+---
+
+```ts
+const a = new URLSearchParams()
+const b = new URLSearchParams()
+
+const combined = new URLSearchParams({
+	...Object.fromEntries(a),
+	...Object.fromEntries(b),
+})
+```
