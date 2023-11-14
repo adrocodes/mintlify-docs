@@ -1,5 +1,6 @@
 ---
 title: React - Micro Contexts
+description: What are micro contexts? It is a way to create a nice separation of domains and group together data.
 ---
 
 A while ago now, React released [Context](https://reactjs.org/docs/context.html) to the masses and the world has never been the same. It seems to have gone downhill, but not because of context. Anyway...
@@ -10,7 +11,7 @@ This is pretty awesome, because we now have a native way to manage our global st
 
 Obviously, you want to see an example. Lets do it, I am going to use a e-commerce site as an example, specifically for a grocery store in my case, I live in Australia, so I have to use [Woolworths](https://www.woolworths.com.au/shop/browse/pantry/tea-coffee). (And yes, opening to the coffee and tea page was intentional)
 
-<Image src={wooliesListing} alt="Screenshot of the Woolworths product listing with annotations" />
+<img src="/images/woolworths-listing.png" alt="Screenshot of the Woolworths product listing with annotations" />
 
 I have outlined a few of the cards to break down a couple of the elements. We can see they all share the same common elements, with probably just a few data differences that indicate what should show or what styling to apply. We could say the data structure looks something like this (probably a lot more complex, but this'll do for now):
 
@@ -111,3 +112,5 @@ Where can you use this context, components and hooks again?
 I hope that this look at using context to be more localised to a domain object has been interesting, and gives you an idea of how you can use it in your projects. If you have a look at my article on [Module Driven Development](/software-design/module-driven-development), you'll see how this approach fits in really well with that. It also benefits testing, creating these small hooks allows you to test each individual piece on its own and gives you more confidence when something needs to change.
 
 ### 👋 until next time!
+
+<Snippet file="latest-paper.mdx" />

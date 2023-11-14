@@ -16,7 +16,20 @@
     }
   },
   "tabs": [],
-  "anchors": [],
+  "anchors": [
+    {
+      "icon": "scroll",
+      "iconType": "duotone",
+      "name": "Papers",
+      "url": "https://papers.adro.codes"
+    },
+    {
+      "icon": "github",
+      "iconType": "duotone",
+      "name": "Github",
+      "url": "https://github.com/adrocodes"
+    }
+  ],
   "navigation": [
     {
       "group": "adro.codes",
@@ -68,5 +81,10 @@
   ],
   "footerSocials": {
     "github": "https://github.com/adrocodes"
+  },
+  "analytics": {
+    "ga4": {
+      "measurementId": "G-9CF5MG7673"
+    }
   }
 }

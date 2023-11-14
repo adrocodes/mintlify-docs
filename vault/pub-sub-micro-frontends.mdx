@@ -1,10 +1,7 @@
 ---
 title: Using the Pub/Sub pattern in a Micro Frontend
+description: Learn how we can apply the Pub/Sub design pattern to communicate between two micro-frontends
 ---
-
-import Image from "next/image"
-import image1 from "../../public/widget-app-pubsub.png"
-import image2 from "../../public/pub-sub-native-approach.png"
 
 A few years ago the idea of a Micro Frontend solution became quite popular. I honestly haven't stayed up to date with the topic so not sure if it ever went anywhere. I did post [this article](https://dev.to/hurricaneinteractive/microfrontends-what-and-why-4ji2) on dev.to to see what other peoples experience/opinion was on the topic. Looking back at the comments, the 1 user who gave a really detailed comment has either deleted their account or their comment... so thats fun.
 
@@ -13,7 +10,7 @@ Anyway, a question I always had was about data sharing. Essentially, if you have
 The way I solved it there was using the pub/sub design pattern. The modal was enclosed in a widget with a form to filter some data. It was within the navigation and was used to navigate the user to a area in the website, the navigation was managed by AEM and was disconnected from SPA that made up the rest of the page. In this SPA, there was a "Filter" button, once clicked it published an event, the widget subscribed on that event and once it received a message, would open the modal.
 
 <div className="mx-auto max-w-md">
-  <Image src={image1} alt="Event based system to communicate between an app and a widget" />
+  <img src="/images/widget-app-pubsub.png" alt="Event based system to communicate between an app and a widget" />
 </div>
 
 This became a useful pattern in a few spots where really deeply nested components had to communicate to a much higher component. Rather than setting up some context with a bunch of `useEffects` to listen to changes, I just published and subscribed to some events. Luckily this was only needed less than a handful of times so the solution didn't need to be the most robust, ultra fast, 0.002ms response time type solution.
@@ -112,7 +109,7 @@ I will say with the codesandbox link, the editor preview is really wacked when u
 Something I might eventually play around with is using this pattern but allow it to feel more "native" to the platform (again, I am sure this already exists).
 
 <div className="mx-auto max-w-md">
-  <Image src={image2} alt="Diagram: shows the ability to create native methods for interacting with a topic" />
+  <img src="/images/pub-sub-native-approach.png" alt="Diagram: shows the ability to create native methods for interacting with a topic" />
 </div>
 
 The idea being that there are methods to provide React with a hook to interact with the topic and create a store for Vue to interact with the topic. This would allow you to subscribe to a topic anywhere across the app with a standardised approach and keep the data in sync, which sounds pretty awesome.
@@ -127,3 +124,5 @@ const counterStore = createSubscriptionStore(counter)
 And that concludes my little adventure of using the Pub/Sub pattern to communicate between two different frontend applications. It was quick, it was dirty but I think it works decently well. Definitely something to keep in mind if I ever have another use case for this in a frontend application.
 
 Peace! ✌️
+
+<Snippet file="latest-paper.mdx" />

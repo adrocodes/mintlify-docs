@@ -1,5 +1,6 @@
 ---
 title: Dynamic Nextjs preview mode
+description: With these snippets you'll be set up to dynamic enable preview mode for any content in your Next.js projects.
 ---
 
 If you ever worked on a Next.js project and needed a preview mode you know that is both super simple but tedious if you have different content types, route structures etc. Especially if you want to [follow the advice given by Next](https://nextjs.org/docs/advanced-features/preview-mode#securely-accessing-it-from-your-headless-cms) and verify that the record exists before you enable preview mode. That becomes kinda hard if you have a catch all, or you end up with a lovely look up table. While that works, I like approaches that are flexible but a bit more explict.
@@ -151,3 +152,5 @@ export default enablePreview(getPreviewSlug, (slug) => `/articles/${slug}`)
 ---
 
 I hope this allows you to easily create your preview routes. Check out the [Nextjs Documentation](https://nextjs.org/docs/advanced-features/preview-mode) for more details around the subject, for example, checking the preview state in `getStaticProps` etc.
+
+<Snippet file="latest-paper.mdx" />

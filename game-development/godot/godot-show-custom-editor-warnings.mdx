@@ -1,5 +1,6 @@
 ---
 title: Show custom editor warnings on Nodes
+description: Learn how to show custom editor warnings on your Nodes to help with your development workflow.
 ---
 
 > This article was originally posted on [dev.to](https://dev.to/hurricaneinteractive/godot-show-editor-warnings-on-nodes-2p8p)
@@ -31,7 +32,10 @@ func _get_configuration_warning():
 
 Before we add the logic, create your new `Enemy` node in a `Scene` so you can see the warnings appear in the editor. If you've changed the return statement, you should see something similar to this:
 
-<Image src={godotWarning} alt="Editor warning example in godot" />
+<img
+  src="/images/godot-node-warning.png"
+  alt="Editor warning example in godot"
+/>
 
 We'll only be looking at direct children, so we'll use the `get_children` method and do a simple boolean check if the check includes a `Sprite`.
 

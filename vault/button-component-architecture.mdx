@@ -1,5 +1,6 @@
 ---
 title: Architecture definition for a button component
+description: How to structure a reusable button component for your next React application. Use these techniques for your generic components to create highly reusable components.
 ---
 
 **Problem:** When building a React Button component, we often overcomplicate the implementation to the point of creating a "catch-all" component.
@@ -280,3 +281,5 @@ import { Anchor } from "./Button";
 ```
 
 The great thing about this change is, it doesn't alter the implementation of the `Button` at all, and existing `Anchor` elements in the app will work perfectly fine as they did before. We were also able to type the ref object to be specifically a `HTMLAnchorElement` instead of a `HTMLAnchorElement|HTMLButtonElement`. Which again, adds in those conditional checks and also might behave weirdly with the `<Link>` component.
+
+<Snippet file="latest-paper.mdx" />

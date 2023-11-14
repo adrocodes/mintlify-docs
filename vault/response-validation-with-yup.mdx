@@ -1,5 +1,6 @@
 ---
 title: Response validation with Yup
+description: It is important to not fully trust the response you get back from your API. Validate the response with yup to ensure the data you are using is as you expect.
 ---
 
 **Problem:** Many times in our Frontend we just "accept" that an API response is what it should be. In Typescript we hide behind generics to type cast, but what if our API is a success with a data structure that we didn't expect? This happened a few times in a recent project. The backend logic for the API hit about 4 different services (that we had no control over), each of these are points of failure. Sometimes one would silently fail causing the API to be a `200` with invalid data. I had a great time.
@@ -108,3 +109,5 @@ Peace! ✌️
   allow="accelerometer; ambient-light-sensor; camera; encrypted-media; geolocation; gyroscope; hid; microphone; midi; payment; usb; vr; xr-spatial-tracking"
   sandbox="allow-forms allow-modals allow-popups allow-presentation allow-same-origin allow-scripts"
 ></iframe>
+
+<Snippet file="latest-paper.mdx" />
