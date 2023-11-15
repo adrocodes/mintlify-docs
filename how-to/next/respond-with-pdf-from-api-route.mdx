@@ -1,0 +1,25 @@
+---
+title: Respond with PDF from API route
+description: How to respond with a PDF from an API route
+---
+
+```ts api/pdf/index.ts
+const result = await fetch("https://pdf.service", {
+	headers: {
+		Accept: "application/pdf"
+	}
+})
+
+// Do your error handling
+
+response.writeHead(200, {
+	'Content-Type': 'application/pdf',
+	'Content-Disposition': 'attachment; filename="filename.pdf"'
+})
+
+response.end(
+	Buffer.from(await result.arrayBuffer())
+)
+```
+
+This will take the incoming PDF from a service and forward the response to the User. Setting the `Content-Disposition` in this way will result in the PDF being downloaded. Removing `attachment` will serve the PDF in browser.

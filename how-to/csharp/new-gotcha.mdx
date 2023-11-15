@@ -1,0 +1,23 @@
+---
+title: new gotcha
+---
+
+Using the `new` keyword to generate a generic `object` has a gotcha, the key value must be a property and not a string.
+
+```csharp
+var query = new
+{
+	// Won't work, must be $in without quotes, however, using a $ is not
+	// valid in a property definition.
+	"$in" = new List<string> { "123" }
+};
+```
+
+Instead you can just use a `Dictionary<string, object>` to achieve the same effect, although it is more verbose.
+
+```csharp
+var query = new Dictionary<string, object>
+{
+	{ "$in", new List<string> { "123" } }
+};
+```

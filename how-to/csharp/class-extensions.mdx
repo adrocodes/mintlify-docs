@@ -1,0 +1,22 @@
+---
+title: C# - Class Extension
+description: Use class extensions to add additional logic to a class without modifying the class itself.
+---
+
+```csharp
+class User {
+	public string Firstname;
+	public string Lastname;
+}
+
+class Extensions {
+	public string Fullname(this User user) {
+		return $"{user.Firstname} {user.Lastname}";
+	}
+}
+
+User user;
+string name = user.Fullname();
+```
+
+Adds the method `Fullname` to a instance of `User` without needing to add the method to the `User` method.

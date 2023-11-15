@@ -54,10 +54,57 @@
       ]
     },
     {
-      "group": "How To",
+      "group": "Tiny tips/tricks",
       "pages": [
-        "how-to/import-json-into-typescript-file",
-        "how-to/merge-search-url-params"
+        {
+          "group": "JavaScript",
+          "icon": "code",
+          "pages": [
+            "how-to/javascript/import-json-into-typescript-file",
+            "how-to/javascript/merge-search-url-params",
+            "how-to/javascript/check-if-two-dates-are-the-same-day"
+          ]
+        },
+        {
+          "group": "NextJS",
+          "icon": "react",
+          "pages": [
+            "how-to/next/respond-with-pdf-from-api-route"
+          ]
+        },
+        {
+          "group": "C#",
+          "icon": "hashtag",
+          "pages": [
+            "how-to/csharp/class-extensions",
+            "how-to/csharp/condition-based-type-casting",
+            "how-to/csharp/generics-refresher",
+            "how-to/csharp/new-gotcha",
+            "how-to/csharp/tryparse"
+          ]
+        },
+        {
+          "group": "Azure",
+          "icon": "cloud",
+          "pages": [
+            "how-to/azure/vscode-cant-log-into-tenant",
+            "how-to/azure/generate-a-sas-token"
+          ]
+        },
+        {
+          "group": "Git",
+          "icon": "code-branch",
+          "pages": [
+            "how-to/git/add-tag-to-branch"
+          ]
+        },
+        {
+          "group": "MacOS",
+          "icon": "apple",
+          "pages": [
+            "how-to/macos/show-symbol-explorer"
+          ]
+        }
       ]
     },
     {

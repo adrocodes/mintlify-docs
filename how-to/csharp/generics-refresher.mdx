@@ -1,0 +1,17 @@
+---
+title: Generics Refresher
+description: Sometimes I just need a reminder
+---
+
+## Methods
+
+```csharp
+void Method<T>(T param); // basic usage
+void Method<T>(T param) where T : BaseClass // narrow down the type of `T`
+```
+
+## Class
+
+```csharp
+class SomeClass<T> where T : BaseClass
+```

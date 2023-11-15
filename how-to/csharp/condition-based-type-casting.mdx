@@ -1,0 +1,15 @@
+---
+title: Condition based type casting
+---
+
+```csharp
+public void Method(BaseClass entry)
+{
+  if (entry is not ExtendedClass extendedEntry) {
+    return;
+  }
+
+  // `extendedEntry` is now of type ExtendedClass
+  // if it can't be converted, break out of the function
+}
+```

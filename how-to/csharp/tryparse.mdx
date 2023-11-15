@@ -1,0 +1,10 @@
+---
+title: TryParse
+description: Sometimes I just need a reminder
+---
+
+```csharp
+double? fixedPriceDouble = double.TryParse(fixedPrice, out double converted) ? converted : null;
+```
+
+Converts a `String` variable of `fixedPrice` into a `double?` called `fixedPriceDouble`.
