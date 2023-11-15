@@ -1,0 +1,27 @@
+---
+title: Get minutes elapsed since midnight
+description: Need to get the minutes elapsed since midnight? Here's how to do it in JavaScript.
+---
+
+```ts get-minutes-elapsed-since-midnight.ts
+export function getMinutesElapsedSinceMidnight() {
+  // Get the current date
+  const currentDate = new Date();
+  // Create a date from that, but 0 out the hours, minutes, seconds, and milliseconds (aka midnight)
+  const currentDateAsMidnight = new Date(
+    currentDate.getFullYear(),
+    currentDate.getMonth(),
+    currentDate.getDate(),
+  );
+
+  // Get the milliseconds elapsed since midnight
+  const msElapsedSinceMidnight = currentDate.getTime() - currentDateAsMidnight.getTime();
+
+  // Convert the milliseconds to minutes
+  const minutesElapsedSinceMidnight = Math.floor(
+    msElapsedSinceMidnight / 1000 / 60,
+  );
+
+  return minutesElapsedSinceMidnight;
+}
+```

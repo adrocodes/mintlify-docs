@@ -75,7 +75,8 @@
           "pages": [
             "how-to/javascript/import-json-into-typescript-file",
             "how-to/javascript/merge-search-url-params",
-            "how-to/javascript/check-if-two-dates-are-the-same-day"
+            "how-to/javascript/check-if-two-dates-are-the-same-day",
+            "how-to/javascript/get-minutes-elapsed-since-midnight"
           ]
         },
         {
