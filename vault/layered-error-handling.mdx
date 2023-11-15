@@ -1,0 +1,129 @@
+---
+title: Layered Error Handling
+description: I explore using a system of layered error types to provide a more precise reason for why something went wrong to the user or stakeholders.
+---
+
+Let me set the scene a bit, it is a stormy Sunday... Just kidding.
+
+I recently worked on a client project where the goal was to connect several services and automate some processes. We were connecting Ninja Forms (WordPress), WooCommerce (WordPress), HubSpot and MYOB together. Where previously data had to be manually transferred between Ninja Form, HubSpot and MYOB. Ninja Form will now trigger an Azure Function and automatically create/update records in HubSpot & MYOB. All up we have about 6 (more coming soon) functions that are triggered in various HubSpot Workflows, E-Commerce events and form submissions.
+
+As you can imagine, interfacing with 3-4 different services at any given time can cause some problems, or because we didn't want to cause more trouble, if we determined something could cause harm to the HubSpot/MYOB records, we trigger a "kill-switch" and create a HubSpot service ticket to allow the client to manually resolve these issues.
+
+These service tickets then became quite important to provide the client and me with enough information about what went wrong, when it went wrong and any data that is important. This will then help the client to resolve the issue if they can, or allow me to investigate the issue, review the Azure Logs and debug the issue further.
+
+Because of this, I knew the classic Error (I'll be using `Error` and `Exception` interchangeably ) class that JavaScript provides was not going to be enough. I decided to come up with a **Layered Error Handling** approach. To better visualise this, I made this super technical drawing:
+
+<img src="/images/layered-exception-handling.png" alt="A diagram visually explaining the idea behind layered exception handling" />
+
+<Info>This concept of having more and more specific exceptions isn't new, however JavaScript doesn't provide a rich collection of exceptions as a more backend focused language like C# does. Thinking more about exceptions in this way gets you a little closer.</Info>
+
+## Domain Level Exceptions
+
+These are my first level of specificity for my exceptions. They are simple a class for my more generic exceptions to inherit from.
+
+```ts
+class DomainExceptionHubSpot extends Error {}
+class DomainExceptionMYOB extends Error {}
+// ...etc
+```
+
+This allows me to generate a more accurate service ticket subject to inform the client of where the error occurred.
+
+```ts
+const getSubject = (error: Error) => {
+  switch (true) {
+    case error instanceof DomainExceptionHubSpot:
+      return "Something went wrong with HubSpot"
+    case error instanceof DomainExceptionMYOB:
+      return "Something went wrong with MYOB"
+    default:
+      return "Something went wrong, unsure where"
+  }
+}
+```
+
+We are able to use the `instanceof` check here to see where the error originated from. Now, the subjects I provide are a bit more specific than that and can be whatever you want. The `default` is useful to provide an error if something completely unexpected happened. It might seem bad at first, but this will allow you to run through locally with the input data and narrow down where something went wrong. Allowing you to strengthen your code and tests, and assign an appropriate exception type to this problem.
+
+## Domain Specific Exceptions
+
+The next layer (I have only gone this deep, but you can go further depending on your use case) is an exception specific to a particular Domain. These will inherit from the Domain Level exception allowing us to use the `instanceof` check in the example `getSubject` method above.
+
+```ts
+class HubSpotRecordNotFound extends DomainExceptionHubSpot {}
+```
+
+This is where I would modify the `constructor` to take in specific data based on the exception and construct a message that will go into the body of the service ticket.
+
+```ts
+class HubSpotRecordNotFound extends DomainExceptionHubSpot {
+  constructor(id: string, entityType: "Deal" | "Contact") {
+    super(`Could not find a record of type ${entityType} with id of: ${id}`)
+  }
+}
+```
+
+This allows me to then use the `error.message` prop to populate the body of the Service Ticket. However, for some exceptions, I do need to provide a bit more information to help the client and debugging. For this, I created an `ITicketException` interface that an `Error` can implement to construct a more complicated error message.
+
+```ts
+interface ITicketException {
+  body(): string
+}
+
+class HubSpotUpdateFailed extends DomainExceptionHubSpot implements ITicketException {
+  constructor(
+    private id: string,
+    private payload: Payload,
+    private response: FetchResponse
+  ) {
+    super(`Unable to update HubSpot Record with id: ${id}`)
+  }
+
+  public body(): string {
+    return [
+      this.message, // from the base Error class
+      `Details: ${response.statusText}`,
+      `----`,
+      `Code: ${response.status}`,
+      `ID: ${id}`,
+      `Payload: ${JSON.stringify(payload)}`
+    ].join('\n')
+  }
+}
+```
+
+In this case, everything above the `---` would be details that the client may be able to use to solve the issue (if possible from their end), otherwise, I am able to check the other details and quickly use the payload to debug the issue locally. If I am not able to narrow down the details, I can track down the logs in Azure to further help with the debugging effort.
+
+Similarly to the `getSubject` method, I also have a `getContent` method.
+
+```ts
+const getContent = (error: Error) => {
+  switch (true) {
+    case isTicketException(error):
+      return error.body()
+    default:
+      return error.message
+  }
+}
+```
+
+Since `ITicketException` is not a `class` we can't use the `instanceof` check, I created a helper to determine if a particular error implements the interface.
+
+```ts
+const isTicketException = (error: unknown): error is ITicketException => {
+  return (
+    typeof error === "object"
+    && "body" in error
+    && typeof error.body === "function"
+  )
+}
+```
+
+## That is a wrap
+
+That is how far I have gotten in this little **Layered Error Handling** approach. So far, it is working quite well. A bit of upfront effort to set up these exception classes however, I think the payoff is really good. It has also helped with testing as I am able to test to make sure that a particular method throws the exception that I am expecting if incorrect data is passed to it.
+
+```ts
+expect(UpdateDeal(id, badPayload)).toThrow(HubSpotUpdateFailed)
+```
+
+<Snippet file="latest-paper.mdx" />

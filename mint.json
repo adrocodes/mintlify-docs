@@ -59,6 +59,7 @@
         "vault/dynamic-nextjs-preview-mode",
         "vault/eleven-unit-test-rules",
         "vault/gamification",
+        "vault/layered-error-handling",
         "vault/pub-sub-micro-frontends",
         "vault/pwa-fetch-respondwith-error-safari",
         "vault/react-micro-contexts",
@@ -73,10 +74,10 @@
           "group": "JavaScript",
           "icon": "code",
           "pages": [
-            "how-to/javascript/import-json-into-typescript-file",
-            "how-to/javascript/merge-search-url-params",
             "how-to/javascript/check-if-two-dates-are-the-same-day",
-            "how-to/javascript/get-minutes-elapsed-since-midnight"
+            "how-to/javascript/get-minutes-elapsed-since-midnight",
+            "how-to/javascript/import-json-into-typescript-file",
+            "how-to/javascript/merge-search-url-params"
           ]
         },
         {
@@ -101,8 +102,8 @@
           "group": "Azure",
           "icon": "cloud",
           "pages": [
-            "how-to/azure/vscode-cant-log-into-tenant",
-            "how-to/azure/generate-a-sas-token"
+            "how-to/azure/generate-a-sas-token",
+            "how-to/azure/vscode-cant-log-into-tenant"
           ]
         },
         {
