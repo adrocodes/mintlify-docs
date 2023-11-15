@@ -15,7 +15,19 @@
       "to": "#f59e0b"
     }
   },
-  "tabs": [],
+  "tabs": [
+    {
+      "name": "The Knowledge Vault",
+      "url": "vault"
+    },
+    {
+      "name": "Software Design",
+      "url": "software-design"
+    }
+  ],
+  "primaryTab": {
+    "name": "Home"
+  },
   "anchors": [
     {
       "icon": "scroll",
@@ -40,6 +52,7 @@
     {
       "group": "The Vault",
       "pages": [
+        "vault/index",
         "vault/button-component-architecture",
         "vault/change-your-document-title-when-a-user-changes-tabs",
         "vault/create-a-chrome-extension-with-react",
@@ -104,25 +117,22 @@
           "pages": [
             "how-to/macos/show-symbol-explorer"
           ]
+        },
+        {
+          "group": "Godot",
+          "icon": "game-console-handheld",
+          "pages": [
+            "game-development/godot/godot-show-custom-editor-warnings"
+          ]
         }
       ]
     },
     {
       "group": "Software Design",
       "pages": [
+        "software-design/index",
         "software-design/module-driven-development",
         "software-design/principles"
-      ]
-    },
-    {
-      "group": "Game Development",
-      "pages": [
-        {
-          "group": "Godot",
-          "pages": [
-            "game-development/godot/godot-show-custom-editor-warnings"
-          ]
-        }
       ]
     }
   ],
