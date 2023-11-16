@@ -1,0 +1,17 @@
+---
+title: Check if date is invalid
+description: Need to know if a date is invalid? Here's how.
+---
+
+```ts is-date-invalid.ts
+function isDateInvalid(date: Date): boolean {
+  return Number.isNaN(date.valueOf());
+}
+```
+
+The `new Date()` constructor will not throw an error if you pass it a wrong value, checking the value of the returned date object is the only way to know if the date is invalid.
+
+```ts
+isDateInvalid(new Date()) // false
+isDateInvalid(new Date('2023-55-99')) // true
+```

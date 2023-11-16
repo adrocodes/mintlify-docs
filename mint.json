@@ -74,6 +74,7 @@
           "group": "JavaScript",
           "icon": "code",
           "pages": [
+            "how-to/javascript/check-if-date-is-invalid",
             "how-to/javascript/check-if-two-dates-are-the-same-day",
             "how-to/javascript/get-minutes-elapsed-since-midnight",
             "how-to/javascript/import-json-into-typescript-file",
