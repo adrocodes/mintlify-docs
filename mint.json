@@ -108,6 +108,13 @@
           ]
         },
         {
+          "group": "SQL",
+          "icon": "database",
+          "pages": [
+            "how-to/sql/get-overview-of-table"
+          ]
+        },
+        {
           "group": "Git",
           "icon": "code-branch",
           "pages": [
