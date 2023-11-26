@@ -1,0 +1,152 @@
+---
+title: Configure Context with a useReducer state management pattern.
+description: This combo will give you a simple state management pattern that can be used in any React application.
+---
+
+## Set up types if you're using TypeScript
+
+```ts types.ts
+import type { Dispatch } from 'react';
+
+export type State = {};
+
+// These are utility types and can be exported somewhere else
+type Action<T extends string, P> = { type: T; payload: P };
+type ActionWithoutPayload<T extends string> = { type: T };
+
+// These are the actions that can be dispatched
+type Reset = ActionWithoutPayload<"RESET">;
+type UpdateField = Action<"UPDATE_FIELD", { name: string; value: unknown }> // be more specific than me
+
+export type Actions = Reset | UpdateField;
+
+export type ContextState = State & {
+  // Some people create two layers of context for state & dispatch,
+  // do what you feel is best for your project
+  dispatch: Dispatch<Actions>
+}
+```
+
+## Set up your reducer
+
+<CodeGroup>
+```ts reducer.ts
+import { produce } from 'immer';
+import type { State, Actions } from './types'
+
+// Used for resetting - if you have a `initialState` object,
+// make sure to store that as a `readonly` property in your `State` type to reference here.
+export function initState(): State {}
+
+export function reducer(state: State, action: Actions) {
+  if (action.type === 'RESET') return initState();
+
+  return produce(state, (draft) => {
+    switch (action.type) {
+      case 'UPDATE_FIELD': {
+        const { name, value } = action.payload;
+        draft[name] = value;
+        break;
+      }
+    }
+
+    return draft
+  })
+}
+```
+
+```js reducer.js
+import { produce } from 'immer';
+
+export function initState() {}
+
+export function reducer(state, action) {
+  if (action.type === 'RESET') return initState();
+
+  return produce(state, (draft) => {
+    switch (action.type) {
+      case 'UPDATE_FIELD': {
+        const { name, value } = action.payload;
+        draft[name] = value;
+        break;
+      }
+    }
+
+    return draft
+  })
+}
+```
+</CodeGroup>
+
+<Info>Immer does export a [useImmerReducer](https://immerjs.github.io/immer/example-setstate#useimmerreducer) hook, I don't use that. If I decide to rip out immer, I'll just need to re-implement my reducer function and not shuffle type definitions or alter my context definition.</Info>
+
+## Set up your context
+
+<CodeGroup>
+```tsx context.tsx
+import { createContext, useContext, useMemo, useReducer, type PropsWithChildren } from 'react'
+import { reducer, initState } from './reducer'
+import type { ContextState } from './types'
+
+const Context = createContext<ContextState | undefined>(undefined) // we'll guard agains't this in our hook
+
+export const Provider = ({ children }: PropsWithChildren) => {
+  const [state, dispatch] = useReducer<typeof reducer, ContextState>(
+    reducer,
+    {} as ContextState,
+    () => initState()
+  )
+
+  const value = useMemo(() => ({ state, dispatch }), [state, dispatch])
+
+  return <Context.Provider value={value}>{children}</Context.Provider>
+}
+
+export const useContextState = () => {
+  const context = useContext(Context)
+
+  if (context === undefined) {
+    throw new Error('useContextState must be used within a Provider')
+  }
+
+  return context
+}
+```
+
+```jsx context.jsx
+import { createContext, useContext, useMemo, useReducer } from 'react'
+import { reducer, initState } from './reducer'
+
+const Context = createContext(undefined) // we'll guard agains't this in our hook
+
+export const Provider = ({ children }) => {
+  const [state, dispatch] = useReducer(
+    reducer,
+    {},
+    () => initState()
+  )
+
+  const value = useMemo(() => ({ state, dispatch }), [state, dispatch])
+
+  return <Context.Provider value={value}>{children}</Context.Provider>
+}
+
+export const useContextState = () => {
+  const context = useContext(Context)
+
+  if (context === undefined) {
+    throw new Error('useContextState must be used within a Provider')
+  }
+
+  return context
+}
+```
+</CodeGroup>
+
+---
+
+This is very much a boilerplate to get you started. **Very important**, if you've got a large application and need global stores, look at other solutions like [Zustand](https://github.com/pmndrs/zustand) or [Jotai](https://jotai.org/), they do a much better job at reducing unnecessary re-renders. This pattern should wrap small parts of a application, such as a form experience or in a [Micro Context](/vault/react-micro-contexts) pattern.
+
+You can customise the `ContextState` type to include `computed` values which you'll compute using a `useMemo` or inline in the `Provider`. You can also add additional props to the `Provider` to determine the initial state, remember to store these values for later use in the `RESET` action.
+
+Also also, rename these functions/types/files to be more specific to your use case. I've used `State` and `Actions` as generic names, but you should be more specific to your use case.

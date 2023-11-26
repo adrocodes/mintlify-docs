@@ -53,6 +53,7 @@
       "group": "The Vault",
       "pages": [
         "vault/index",
+        "vault/building-forms-in-react",
         "vault/button-component-architecture",
         "vault/change-your-document-title-when-a-user-changes-tabs",
         "vault/create-a-chrome-extension-with-react",
@@ -83,9 +84,16 @@
         },
         {
           "group": "NextJS",
-          "icon": "react",
+          "icon": "triangle",
           "pages": [
             "how-to/next/respond-with-pdf-from-api-route"
+          ]
+        },
+        {
+          "group": "React",
+          "icon": "react",
+          "pages": [
+            "how-to/react/context-with-use-reducer"
           ]
         },
         {

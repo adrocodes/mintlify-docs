@@ -1,0 +1,381 @@
+---
+title: Building forms in React
+description: There are plenty of ways to build forms in React, but messing up the fundamentals can cause a lot of pain and suffering
+---
+
+## Ignore every form library for a second
+
+Where React shines is in its ability to define, build & compose components. So, lets start with defining our form components. This is really simple, we have a `input` element, so we have a `Input` component. We have a `select` element, so we have a `Select` components, etc. When defining these, they should behave like the native elements but apply your core styles to them.
+
+<Info>If you're using typescript, React exposes a `ComponentProps` type to make prop definitions easier.</Info>
+
+<CodeGroup>
+```tsx input.tsx
+import { type ComponentProps } from 'react'
+
+export const Input = ({ className = '', ...props }: ComponentProps<'input'>) => {
+  return <input {...props} className={`... ${className}`} />
+}
+```
+
+```tsx select.tsx
+import { type ComponentProps } from 'react'
+
+export const Select = ({ className = '', ...props }: ComponentProps<'select'>) => {
+  return <select {...props} className={`... ${className}`} />
+}
+```
+
+```tsx textarea.tsx
+import { type ComponentProps } from 'react'
+
+export const Textarea = ({ className = '', ...props }: ComponentProps<'textarea'>) => {
+  return <textarea {...props} className={`... ${className}`}></textarea>
+}
+```
+</CodeGroup>
+
+That is it, you can repeat this for other elements as well, `label`, `fieldset`, etc. The idea here is to build your layer of abstraction on top of the native elements. This allows you to build your own components that are composable and reusable.
+
+<Note>**IMPORTANT:** Notice that we are not referencing a library or managing state or anything in these components, this is very very important, it keeps them simple, and allows us to compose them in any way we want, regardless of library or state requirements.</Note>
+
+The only other customisation you can build into these components at this stage is logical defaults or type refinement. You might also want to wrap these in a [forwardRef](https://react.dev/reference/react/forwardRef) as some libraries may require this.
+
+```tsx input.tsx
+import { type ComponentProps, forwardRef } from 'react'
+
+type InputProps = ComponentProps<'input'> & {
+  name: string // Always require a `name` to be provided
+}
+
+export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(props, ref) {
+  const { className = '', type = 'text', ...rest } = props
+
+  return <input {...rest} type={type} ref={ref} className={`... ${className}`} />
+});
+```
+
+The `forwardRef` does make the component a little more complex to read, but not too bad in the end as this should be a set and forget type of component.
+
+The best thing about this is, once you've created this small library of native abstractions you can continue to transfer them across projects. Since they contain no business logic or library dependencies, they are very portable.
+
+### What if I use something like Headless UI?
+
+[Headless UI](https://headlessui.com/) and similar libraries provide primitives for you to build more complex components without needing to worry about their styling interferring with yours, among other tasty things. These are further from the native elements, but we can still apply the same principles.
+
+The main one to keep in mind is, keep it simple. In the case of a [Listbox](https://headlessui.com/react/listbox) which will replace your `select` element, keep state out of it, and keep it to forwarding props and state.
+
+```tsx listbox.tsx
+import { Listbox } from '@headlessui/react'
+
+type Option = { id: string }
+
+type Props = {
+  options: Option[]
+  value?: Option
+  onChange: (value: Option) => void
+  className?: string;
+}
+
+export const Listbox = (props: Props) => {
+  return (
+    <Listbox value={props.value} onChange={props.onChange}>
+      {/* ... */}
+    </Listbox>
+  )
+}
+```
+
+Once these are configured you can continue to use them as native feeling elements, but ready to integrate with your form building approach.
+
+## Composition
+
+As I mentioned before;
+
+> Where React shines is in its ability to define, build & compose components.
+>
+> -- me, just before
+
+So lets compose some elements to make building our form a bit easier and quicker. When building forms, you usually have a few components sitting next to each other, for example a `label` and `input`/`select`. I like to call these `control` components, `form-{element}-control`, the props they take are the same as your abstraction we created above. This is a good place to put [fancy radio/checkbox](https://tailwindui.com/components/application-ui/forms/radio-groups#component-45612766894822db447a2837d79355f5) controls as well.
+
+```tsx form-input-control.tsx
+import { type ComponentProps } from 'react'
+import { Label, Input } from '@/core/form'
+
+type Props = ComponentProps<typeof Input> & {
+  labelClassName?: string // Additional styling API for the label
+}
+
+export const FormInputControl = ({ children, className = '', labelClassName = '', ...props }: Props) => {
+  return (
+    <label className={labelClassName}>
+      <span>{children}</span> {/* Optional `span` wrap, I like it */}
+      <Input {...props} className={className} />
+    </label>
+  )
+}
+```
+
+You'd use this in a form like so;
+
+```tsx
+return (
+  <form>
+    <FormInputControl type="email" name="email" placeholder="jamie.doe@...">
+      Email address
+    </FormInputControl>
+  </form>
+)
+```
+
+Once again, it might be smart to wrap this in a `forwardRef`, but I'll leave that up to you. This is also the time you can add a small bit of UI rendering logic if you need to. For example, you might want to add a `required` indicator to the label if the `required` prop is passed to the `Input` component.
+
+```tsx form-input-control.tsx
+export const FormInputControl = ({ children, className = '', labelClassName = '', required = false,  ...props }: Props) => {
+  return (
+    <label className={labelClassName}>
+      <span>{children} <RequiredMark required={required} /></span>
+      <Input {...props} className={className} required={required} />
+    </label>
+  )
+}
+```
+
+<Info>Again, this is another abstraction on top of our native element abstraction. We don't manage state at this level, we are simplify building a solid foundation to build on top of. Again, these are simple components with no external dependencies other than the layer we wrote, making it easy to transfer between projects.</Info>
+
+## Question if you need a form library
+
+A bit cheeky but a honest question, what exactly are your form needs?
+
+- Is it a login form or register form? You probably don't need a library.
+- Is it a contact form? You probably don't need a library.
+- Is it a donation form with money validation? You probably don't need a library.
+- Is it a multi-step form with complex validation before you can continue? You probably need a library.
+
+### Utilise native behaviour
+
+You can get quite far using built in native validations to make sure the data being sent to your backend if fairly correct, you will 100% still need to validate the data on the backend regardless if you decide to have a library with on-the-fly validation.
+
+Lets take the login form as an example.
+
+```tsx login-form.tsx
+return (
+  <form>
+    <FormInputControl required name="email" type="email" />
+    <FormInputControl required name="password" type="password" min="6" />
+  </form>
+)
+```
+
+The `type="email"` will ensure the value is email-esque and the `min="6"` will ensure the password is at least 6 characters long. You can also use the [pattern](https://developer.mozilla.org/en-US/docs/Web/HTML/Attributes/pattern) attribute if you want to add some more "complex" validation on the field. But this approach will get you quite far, without needing to reach for 2 libraries to do the same thing, a form library (Formik, react-hook-form, etc) and a validation library (zod, yup, etc).
+
+On submission you can use [FormData](https://developer.mozilla.org/en-US/docs/Web/API/FormData/FormData) to pull the data out and send that to your backend to validate & process.
+
+```tsx login-form.tsx
+const onSubmit = (event) => {
+  const fd = new FormData(event.target)
+  // You can then convert this to JSON or send it as is
+}
+```
+
+Now, you might be thinking, "but now I have to do a lot more API error handling", yes, which is good, you should be doing that anyway. A `catch(err) { console.error(err) }`, shouldn't be your error handling approach. If you're in charge of the backend you can should return a `400` error with a JSON body containing the errors. If you're using a validation library, they usually go a good job at giving you a `key/value` pair of field name and the error message. You can use this on the frontend to display the error message next to the field, or you can use it to display a generic error message at the top/bottom of the form.
+
+```tsx login-form.tsx
+const response = await fetch(...)
+
+if (response.status === 400) {
+  const json = await response.json() as BadResponseErrors
+
+  if (json.type === "ZOD") {
+    setErrors(json.errors)
+  }
+  // ... handle other error types
+}
+
+// ... handle other status codes
+```
+
+Consistency is key here, you want to make sure you're returning the same error structure for all your endpoints, this makes it easier to handle errors on the frontend. You can extract the error handling into a utility to avoid repeating yourself as well. Just please, don't return a `200` with a status code in the body of `400`. Please... I beg you.
+
+### Extract complex fields
+
+I mentioned the donation form above, this is a good example of where you might need more control over the value and what is accepted as a valid value. Here you can extract that field into its own component and manage the state of that component.
+
+```tsx price-control.tsx
+type Props = Omit<ComponentProps<typeof FormInputControl>, 'value' | 'onChange' | 'type' | 'inputMode' | 'step'>;
+
+export const PriceControl = (props: Props) => {
+  const [value, setValue] = useState('')
+
+  const onChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const val = parseFloat(event.target.valueAsNumber.toFixed(2))
+    if (Number.isNaN(val)) return
+    setValue(val.toString())
+  }
+
+  return (
+    <FormInputControl
+      min={0}
+      {...props}
+      type="number"
+      inputMode="numeric"
+      step={0.01}
+      value={value}
+      onChange={onChange}
+    />
+  )
+}
+```
+
+In the donation form you can again use this as a semi-native element and continue to use `FormData` in the same way as before. Using the form data to start a Stripe Checkout flow or something similar.
+
+```tsx donation-form.tsx
+return (
+  <form>
+    <PriceControl required name="custom_amount" />
+  </form>
+)
+```
+
+This pattern doesn't have to be limited to just a single field. Sometimes you might have multiple fields that need to be validated together, for example a `password` and `confirm password` field. You can extract these into their own component and manage the state of them together. Moving these outside of the form component also allows you to use them in other places, and keeps the form component simple.
+
+## I need a library
+
+We'll look at [react-hook-form](https://react-hook-form.com/) as an example, but the same principles apply to other libraries. The best part of RHF is that it interfaces really we'll with native elements.
+
+```tsx rhf-example.tsx
+const Form = () => {
+  const { register } = useForm();
+
+  return (
+    <input {...register("firstName")} placeholder="First name" />
+  )
+}
+```
+
+We'll the whole point of the first few steps was to create a thin layer of abstraction over the native elements. We can pretty much replace that `input` for our `Input` or `FormInputControl` component.
+
+```tsx rhf-example.tsx
+const Form = () => {
+  const { register } = useForm();
+
+  return (
+    <>
+      <Input {...register("firstName")} placeholder="First name" />
+      <FormInputControl {...register("lastName")} placeholder="Last name">Last name</FormInputControl>
+    </>
+  )
+}
+```
+
+And now you have all the benefits of RHF without needing to completely re-implement your core form elements.
+
+However, some libraries including RHF includes components to manage state through React context, how would we go about using these? We definitely don't want to polute our base elements with this logic, so we can create another thin layer of abstraction. Best part is, once implemented for a specific library you can move these across projects as well.
+
+```tsx rhf/FormInputControl.tsx
+import { FormInputControl as BaseInputControl } from "@/core/form"
+import { type RegisterOptions, useFormContext, useFormState } from 'react-hook-form'
+
+type Props = ComponentProps<typeof BaseInputControl> & {
+  name: string // name is required for the RHF hooks
+  registerOptions?: RegisterOptions  // optional options for RHF
+}
+
+export const FormInputControl = ({ name, options, ...props }: Props) => {
+  const { register, control } = useFormContext()
+  const { errors } = useFormState({ control, name })
+  const attributes = register(name, options)
+
+  return (
+    <>
+      <BaseInputControl {...props} {...attributes} />
+      {/* Some component to use `errors` - or `<Errors name={name} /> which does the `useFormState` call */}
+    </>
+  )
+}
+```
+
+I like the pattern of naming the library implemented component the same as the base component. This makes it easier to swap out the library if you need to or switch back to your base components by updating the import path.
+
+```tsx rhf-context.tsx
+import { FormInputControl } from "@/core/form/rhf"
+
+const Form = () => {
+  const methods = useForm()
+
+  return (
+    <FormProvider {...methods}>
+      <form>
+        <FormControlInput name="firstName" />
+      </form>
+    </FormProvider>
+  )
+}
+```
+
+For our `PriceControl` example above, you can take a similar approach but instead of managing state through built-in React methods, you'd use the library's methods to control how the value is managed. For example, `useFormContext` exposes a `setValue` method, you can override the `onChange` behaviour and call this method to update the value.
+
+```tsx rhf/price-control.tsx
+export const PriceControl = ({ name, options, ...props }: Props) => {
+  const { register, control, setValue } = useFormContext()
+  const attributes = register(name, options)
+
+  const onChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const val = parseFloat(event.target.valueAsNumber.toFixed(2))
+    if (Number.isNaN(val)) return
+    setValue(name, val.toString(), { shouldValidate: true })
+  }
+
+  return (
+    <FormInputControl
+      min={0}
+      {...props}
+      type="number"
+      inputMode="numeric"
+      step={0.01}
+      {...attributes}
+      // This will replace the `onChange` from the `register` call
+      onChange={onChange}
+    />
+  )
+}
+```
+
+Alternatively, now that you're using a library you can tap into the validation rules or introduce a validation library to handle the validation for you. Allow the user to input whatever they like and only allow submitting when the library says everything is okay.
+
+## I don't need a library, but I want to manage state for the entire form
+
+Let's say you have a complex form but doesn't need to be too reusable in terms of state management & submit functionality. You don't want to introduce a library for this, but you still want to manage the state of the form in a single place. For this I'd recommend using [React Context](https://react.dev/reference/react/createContext) mixed with [useReducer](https://react.dev/reference/react/useReducer). Context allows you to create a place to store your state so that all parts of the form will have access to. While `useReducer` gives you a nice `dispatch` pattern to update the state, providing more control to perform complex state updates when required without needing to introduce any `useEffect` calls to monitor value changes.
+
+There are a few steps in this process so check out this how-to guide for more information.
+
+<Card
+  title="Context with useReducer"
+  icon="face-thinking"
+  href="/how-to/react/context-with-use-reducer"
+>
+Learn how to configure a context provider with useReducer to manage the state of your form.
+</Card>
+
+As a quick example of how a dispatch action can save you from using a `useEffect`, I recently worked on a project with a donation form. When the user switched between a One-time and Monthly payment we wanted to clear any pricing information they've set. I create a dispatch action called `SET_FREQUENCY` which would handle this for me.
+
+```tsx reducer-action.tsx
+switch (action.type) {
+  case 'SET_FREQUENCY':
+    draft.frequency = action.payload
+    draft.priceOption = undefined
+    draft.isChoosingCustomAmount = false;
+    draft.customPricingAmount = undefined;
+    break;
+}
+```
+
+<Info>I was using [immer](https://immerjs.github.io/immer/) to allow me to write these mutating statements in my reducer.</Info>
+
+I definitely prefer this over a `useEffect`, since that can cause some weird side effects if you're not careful. Additionally with [StrictMode](https://react.dev/reference/react/StrictMode) running `useEffect` twice, it can sometimes cause issues depending on what you're doing in the effect. If you can avoid a `useEffect` it is always a win, one less thing to worry about and keep track of.
+
+---
+
+There are some other patterns relating to forms that I haven't covered here, but I think these are the most important ones to get right. In the future I will cover some patterns for Next.js and how to handle submissions using server actions.
+
+For now, just remember to keep it simple, don't over complicate things, and don't reach for a library unless you really need it. Focus on building a solid foundation with your core components and build on top of that.
