@@ -1,0 +1,22 @@
+---
+title: Search indexing - Failed to index
+description: In some cases, the indexing might fail to index the site. In cases like these you may need to trigger a manual reindexing to get it to work.
+---
+
+```shell
+yarn add datocms-client
+```
+
+```js reindex.js
+const SiteClient = require('datocms-client').SiteClient
+const client = new SiteClient("{search-api-key}")
+const buildId = '{Building Triggers > Production (id in URL)}'
+
+client.buildTriggers.reindex(buildId)
+	.then(() => console.log("Done!"))
+	.catch((err) => console.error(err))
+```
+
+You can add this to your project and run it as a node script. (`node reindex.js`) Run it and hope it outputs `Done!`, it might take a few seconds (or minutes) depending on the site size.
+
+Once completed, hope back into Dato and check the Build Activity Log. You should see a successful site crawl message. Trigger a manual redeployment to ensure it'll reindex properly.

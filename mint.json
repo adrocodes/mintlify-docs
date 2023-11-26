@@ -122,6 +122,13 @@
           ]
         },
         {
+          "group": "DatoCMS",
+          "icon": "folder-grid",
+          "pages": [
+            "how-to/datocms/search-index-failed-to-index"
+          ]
+        },
+        {
           "group": "MacOS",
           "icon": "apple",
           "pages": [
